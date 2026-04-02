@@ -102,6 +102,63 @@ $$;
 
 grant execute on function public.admin_user_file_counts() to authenticated;
 
+-- Admin-only RPC to fetch one user profile by id
+create or replace function public.admin_get_user_profile(target_user_id uuid)
+returns public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  result public.profiles;
+begin
+  set local row_security = off;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Forbidden';
+  end if;
+
+  select *
+  into result
+  from public.profiles
+  where id = target_user_id;
+
+  return result;
+end;
+$$;
+
+grant execute on function public.admin_get_user_profile(uuid) to authenticated;
+
+-- Admin-only RPC to fetch files for one user
+create or replace function public.admin_list_files_for_user(target_user_id uuid)
+returns setof public.files
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  set local row_security = off;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Forbidden';
+  end if;
+
+  return query
+  select *
+  from public.files
+  where user_id = target_user_id
+  order by created_at desc;
+end;
+$$;
+
+grant execute on function public.admin_list_files_for_user(uuid) to authenticated;
+
 -- 2. FILES TABLE
 -- Stores metadata for every uploaded file
 create table public.files (

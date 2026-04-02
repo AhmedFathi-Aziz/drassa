@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getProfile, getFilesForUser, signOut } from '../lib/supabase';
+import { getAdminUserProfile, getFilesForUser, signOut } from '../lib/supabase';
 import FileCard from '../components/FileCard';
 
 function getInitials(name) {
@@ -15,18 +15,27 @@ export default function AdminUserDetail() {
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
+  const [error, setError] = useState('');
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      setError('');
       try {
-        const [prof, userFiles] = await Promise.all([
-          getProfile(userId),
-          getFilesForUser(userId),
-        ]);
+        const prof = await getAdminUserProfile(userId);
         setUserProfile(prof);
+      }
+      catch (err) {
+        console.error(err);
+        setError(err?.message || 'Failed to load user profile');
+      }
+
+      try {
+        const userFiles = await getFilesForUser(userId);
         setFiles(userFiles || []);
       } catch (err) {
         console.error(err);
+        setError(prev => prev || (err?.message || 'Failed to load user files'));
       } finally {
         setLoading(false);
       }
@@ -83,6 +92,11 @@ export default function AdminUserDetail() {
 
       {/* Main */}
       <div style={{ flex: 1, padding: 32, background: '#f8f9fa', overflowY: 'auto' }}>
+        {error && (
+          <div style={{ marginBottom: 14, background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e24b4a' }}>
+            {error}
+          </div>
+        )}
         {/* Back + User Header */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28, flexWrap: 'wrap' }}>
           <button onClick={() => navigate('/admin')} style={{
