@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { supabase, getProfile } from '../lib/supabase';
+import { supabase, getProfile, getProfileByEmail } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
-        if (session) fetchProfile(session.user.id);
+        if (session?.user?.id) fetchProfile(session.user.id, session.user.email);
         else setLoading(false);
       })
       .catch((err) => {
@@ -40,9 +40,9 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        if (session) {
+        if (session?.user?.id) {
           setLoading(true);
-          await fetchProfile(session.user.id);
+          await fetchProfile(session.user.id, session.user.email);
         }
         else { setProfile(null); setProfileError(''); setLoading(false); }
       }
@@ -54,7 +54,14 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function fetchProfile(userId) {
+  async function fetchProfile(userId, email) {
+    if (!userId) {
+      setProfile(null);
+      setProfileError('');
+      setLoading(false);
+      return;
+    }
+
     try {
       setProfileError('');
       let p;
@@ -63,7 +70,13 @@ export function AuthProvider({ children }) {
       } catch (firstErr) {
         // Supabase projects can be slow on first request (cold start); retry once.
         await new Promise(resolve => setTimeout(resolve, 1200));
-        p = await getProfile(userId);
+        try {
+          p = await getProfile(userId);
+        } catch (secondErr) {
+          if (!email) throw secondErr;
+          // Fallback: some environments may have profile row keyed differently; try by email.
+          p = await getProfileByEmail(email);
+        }
       }
       setProfile(p);
     } catch (err) {

@@ -78,6 +78,16 @@ export async function getProfile(userId) {
   return data;
 }
 
+export async function getProfileByEmail(email) {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('email', email)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function getAllProfiles() {
   // Use an admin RPC (security definer) to avoid fragile RLS recursion/policy issues.
   const { data, error } = await supabase.rpc('admin_list_user_profiles');
