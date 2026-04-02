@@ -76,6 +76,32 @@ $$;
 
 grant execute on function public.admin_list_user_profiles() to authenticated;
 
+-- Admin-only RPC to get file counts grouped by user
+create or replace function public.admin_user_file_counts()
+returns table (user_id uuid, total bigint)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  set local row_security = off;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Forbidden';
+  end if;
+
+  return query
+  select f.user_id, count(*)::bigint as total
+  from public.files f
+  group by f.user_id;
+end;
+$$;
+
+grant execute on function public.admin_user_file_counts() to authenticated;
+
 -- 2. FILES TABLE
 -- Stores metadata for every uploaded file
 create table public.files (

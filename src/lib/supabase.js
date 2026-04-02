@@ -110,6 +110,21 @@ export async function getFilesForUser(userId) {
   return getUserFiles(userId);
 }
 
+export async function getAdminUserFileCounts() {
+  const { data, error } = await supabase.rpc('admin_user_file_counts');
+  if (!error) return data || [];
+
+  // Fallback for older DB setups without RPC.
+  const { data: files, error: fallbackError } = await supabase
+    .from('files')
+    .select('user_id');
+  if (fallbackError) throw fallbackError;
+
+  const counts = {};
+  for (const f of files || []) counts[f.user_id] = (counts[f.user_id] || 0) + 1;
+  return Object.entries(counts).map(([user_id, total]) => ({ user_id, total }));
+}
+
 export async function uploadFile(file, userId) {
   const storagePath = `${userId}/${Date.now()}_${file.name}`;
 

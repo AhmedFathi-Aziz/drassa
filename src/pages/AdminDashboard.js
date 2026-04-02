@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAllProfiles, getUserFiles, signOut } from '../lib/supabase';
+import { getAdminUserFileCounts, getAllProfiles, signOut } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 function getInitials(name) {
@@ -27,14 +27,11 @@ export default function AdminDashboard() {
         setError('');
         const profiles = await getAllProfiles();
         setUsers(profiles || []);
-        // Load file counts for each user
+
+        // Use aggregated counts to avoid per-user query failures.
         const counts = {};
-        await Promise.all((profiles || []).map(async (u) => {
-          try {
-            const files = await getUserFiles(u.id);
-            counts[u.id] = files?.length || 0;
-          } catch { counts[u.id] = 0; }
-        }));
+        const countRows = await getAdminUserFileCounts();
+        for (const row of countRows || []) counts[row.user_id] = Number(row.total || 0);
         setUserFileCounts(counts);
       } catch (err) {
         console.error(err);
