@@ -1,7 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getAdminUserProfile, getFilesForUser, signOut } from '../lib/supabase';
 import FileCard from '../components/FileCard';
+
+const detailCache = new Map(); // userId -> { profile, files, ts }
 
 function getInitials(name) {
   if (!name) return '?';
@@ -16,12 +18,6 @@ export default function AdminUserDetail() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
-  const [reloadTick, setReloadTick] = useState(0);
-  const loadingRef = useRef(true);
-  const errorRef = useRef('');
-
-  useEffect(() => { loadingRef.current = loading; }, [loading]);
-  useEffect(() => { errorRef.current = error; }, [error]);
 
   useEffect(() => {
     let cancelled = false;
@@ -33,10 +29,21 @@ export default function AdminUserDetail() {
 
     async function load() {
       if (cancelled) return;
-      setLoading(true);
+      const cached = detailCache.get(userId);
+      // Show cached data immediately when revisiting the page.
+      if (cached) {
+        setUserProfile(cached.profile || null);
+        setFiles(cached.files || []);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
       setError('');
+      let latestProfile = cached?.profile || null;
+      let latestFiles = cached?.files || [];
       try {
         const prof = await withTimeout(getAdminUserProfile(userId), 12000, 'Profile request');
+        latestProfile = prof;
         if (!cancelled) setUserProfile(prof);
       }
       catch (err) {
@@ -46,30 +53,29 @@ export default function AdminUserDetail() {
 
       try {
         const userFiles = await withTimeout(getFilesForUser(userId), 12000, 'Files request');
-        if (!cancelled) setFiles(userFiles || []);
+        latestFiles = userFiles || [];
+        if (!cancelled) setFiles(latestFiles);
       } catch (err) {
         console.error(err);
         if (!cancelled) setError(prev => prev || (err?.message || 'Failed to load user files'));
       } finally {
+        if (!cancelled) {
+          detailCache.set(userId, {
+            profile: latestProfile,
+            files: latestFiles,
+            ts: Date.now(),
+          });
+        }
         if (!cancelled) setLoading(false);
       }
     }
 
-    function onVisible() {
-      // Retry only when previous loading is still stuck or there was an error.
-      if (document.visibilityState === 'visible' && (loadingRef.current || !!errorRef.current)) {
-        setReloadTick(t => t + 1);
-      }
-    }
-
     load();
-    document.addEventListener('visibilitychange', onVisible);
 
     return () => {
       cancelled = true;
-      document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [userId, reloadTick]);
+  }, [userId]);
 
   async function handleLogout() {
     try {

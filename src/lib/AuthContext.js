@@ -23,7 +23,6 @@ export function AuthProvider({ children }) {
   const [profileError, setProfileError] = useState('');
   const [loading, setLoading] = useState(true);
   const didInit = useRef(false);
-  const bootTimeoutRef = useRef(null);
   const hasProfileRef = useRef(false);
 
   useEffect(() => {
@@ -35,12 +34,6 @@ export function AuthProvider({ children }) {
     // Guard to avoid concurrent auth calls/subscriptions that can spam "lock ... stole it" errors.
     if (didInit.current) return;
     didInit.current = true;
-
-    // Absolute guard: never keep app in auth loading forever.
-    bootTimeoutRef.current = setTimeout(() => {
-      setProfileError(prev => prev || 'Auth bootstrap timed out');
-      setLoading(false);
-    }, 12000);
 
     // Get initial session
     supabase.auth.getSession()
@@ -74,7 +67,6 @@ export function AuthProvider({ children }) {
 
     return () => {
       subscription.unsubscribe();
-      if (bootTimeoutRef.current) clearTimeout(bootTimeoutRef.current);
     };
   }, []);
 
@@ -113,10 +105,6 @@ export function AuthProvider({ children }) {
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
-      if (bootTimeoutRef.current) {
-        clearTimeout(bootTimeoutRef.current);
-        bootTimeoutRef.current = null;
-      }
       setLoading(false);
     }
   }
