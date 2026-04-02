@@ -21,6 +21,8 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileError, setProfileError] = useState('');
+  // "loading" should only block routing until we know session exists or not.
+  // Profile loading can be slow/stall (network, cold start) and must not freeze the app.
   const [loading, setLoading] = useState(true);
   const didInit = useRef(false);
   const hasProfileRef = useRef(false);
@@ -39,8 +41,9 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
+        // Session is known now; unblock routing immediately.
+        setLoading(false);
         if (session?.user?.id) fetchProfile(session.user);
-        else setLoading(false);
       })
       .catch((err) => {
         console.error('Failed to get session:', err);
@@ -52,16 +55,16 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
+        // Unblock routing immediately on auth event; profile refresh happens in background.
+        setLoading(false);
         if (session?.user?.id) {
           // Token refresh can happen when tab focus changes; avoid unnecessary profile reloads.
           if (_event === 'TOKEN_REFRESHED' && hasProfileRef.current) {
-            setLoading(false);
             return;
           }
-          setLoading(true);
           await fetchProfile(session.user);
         }
-        else { setProfile(null); setProfileError(''); setLoading(false); }
+        else { setProfile(null); setProfileError(''); }
       }
     );
 
@@ -105,7 +108,7 @@ export function AuthProvider({ children }) {
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
-      setLoading(false);
+      // Do not toggle global loading here; routing is already unblocked.
     }
   }
 
