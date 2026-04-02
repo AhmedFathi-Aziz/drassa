@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { getAdminUserProfile, getFilesForUser, signOut } from '../lib/supabase';
 import FileCard from '../components/FileCard';
@@ -17,6 +17,11 @@ export default function AdminUserDetail() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
   const [reloadTick, setReloadTick] = useState(0);
+  const loadingRef = useRef(true);
+  const errorRef = useRef('');
+
+  useEffect(() => { loadingRef.current = loading; }, [loading]);
+  useEffect(() => { errorRef.current = error; }, [error]);
 
   useEffect(() => {
     let cancelled = false;
@@ -51,8 +56,10 @@ export default function AdminUserDetail() {
     }
 
     function onVisible() {
-      // If browser throttled background requests, retry once on return.
-      if (document.visibilityState === 'visible') setReloadTick(t => t + 1);
+      // Retry only when previous loading is still stuck or there was an error.
+      if (document.visibilityState === 'visible' && (loadingRef.current || !!errorRef.current)) {
+        setReloadTick(t => t + 1);
+      }
     }
 
     load();
