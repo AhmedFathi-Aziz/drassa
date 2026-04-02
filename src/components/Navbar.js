@@ -53,7 +53,7 @@ function getInitials(name) {
 
 export default function Navbar({ showAuth = true }) {
   const navigate = useNavigate();
-  const { session, profile } = useAuth();
+  const { session, profile, loading } = useAuth();
 
   async function handleLogout() {
     try {
@@ -81,7 +81,12 @@ export default function Navbar({ showAuth = true }) {
       <div style={styles.links}>
         {session ? (
           <>
-            {profile ? (
+            {loading ? (
+              <div style={styles.userBadge} aria-label="Loading profile">
+                <div style={{ ...styles.avatar, background: '#adb5bd' }}>…</div>
+                <span style={styles.username}>Loading…</span>
+              </div>
+            ) : profile ? (
               <>
                 <div style={styles.userBadge}>
                   <div style={styles.avatar}>{getInitials(profile.full_name)}</div>
@@ -94,7 +99,7 @@ export default function Navbar({ showAuth = true }) {
             ) : (
               <div style={styles.userBadge} title="Your profile record could not be loaded. This usually means the Supabase SQL setup was not run or failed.">
                 <div style={styles.avatar}>?</div>
-                <span style={styles.username}>{session.user?.email || 'Signed in'}</span>
+                <span style={styles.username}>Signed in</span>
               </div>
             )}
             <button style={styles.btnGhost} onClick={handleLogout}>Log Out</button>

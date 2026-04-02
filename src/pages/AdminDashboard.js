@@ -49,7 +49,7 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Sign out failed:', err);
     } finally {
-      navigate('/');
+      window.location.href = '/';
     }
   }
 

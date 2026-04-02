@@ -17,18 +17,33 @@ create table public.profiles (
 -- Allow users to read their own profile; admins can read all
 alter table public.profiles enable row level security;
 
+-- Non-recursive admin check for RLS policies
+-- Avoids "infinite recursion detected in policy for relation profiles"
+create or replace function public.is_admin()
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  -- Bypass RLS for the internal check
+  set local row_security = off;
+  return exists (
+    select 1
+    from public.profiles p
+    where p.id = auth.uid() and p.role = 'admin'
+  );
+end;
+$$;
+
 create policy "Users can view own profile"
   on public.profiles for select
   using (auth.uid() = id);
 
 create policy "Admins can view all profiles"
   on public.profiles for select
-  using (
-    exists (
-      select 1 from public.profiles
-      where id = auth.uid() and role = 'admin'
-    )
-  );
+  using (public.is_admin());
 
 create policy "Users can update own profile"
   on public.profiles for update
@@ -56,12 +71,7 @@ create policy "Users can view own files"
 
 create policy "Admins can view all files"
   on public.files for select
-  using (
-    exists (
-      select 1 from public.profiles
-      where id = auth.uid() and role = 'admin'
-    )
-  );
+  using (public.is_admin());
 
 create policy "Users can insert own files"
   on public.files for insert

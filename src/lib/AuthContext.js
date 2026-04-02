@@ -26,7 +26,10 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
-        if (session) await fetchProfile(session.user.id);
+        if (session) {
+          setLoading(true);
+          await fetchProfile(session.user.id);
+        }
         else { setProfile(null); setLoading(false); }
       }
     );
@@ -39,6 +42,7 @@ export function AuthProvider({ children }) {
       const p = await getProfile(userId);
       setProfile(p);
     } catch (err) {
+      setProfile(null);
       console.error('Failed to fetch profile:', err);
     } finally {
       setLoading(false);
