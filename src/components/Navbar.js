@@ -53,7 +53,7 @@ function getInitials(name) {
 
 export default function Navbar({ showAuth = true }) {
   const navigate = useNavigate();
-  const { session, profile, loading } = useAuth();
+  const { session, profile, profileError, loading } = useAuth();
 
   async function handleLogout() {
     try {
@@ -82,7 +82,7 @@ export default function Navbar({ showAuth = true }) {
         {session ? (
           <>
             {loading ? (
-              <div style={styles.userBadge} aria-label="Loading profile">
+              <div style={styles.userBadge} aria-label="Loading profile" title={profileError || undefined}>
                 <div style={{ ...styles.avatar, background: '#adb5bd' }}>…</div>
                 <span style={styles.username}>Loading…</span>
               </div>
@@ -97,9 +97,9 @@ export default function Navbar({ showAuth = true }) {
                 )}
               </>
             ) : (
-              <div style={styles.userBadge} title="Your profile record could not be loaded. This usually means the Supabase SQL setup was not run or failed.">
+              <div style={styles.userBadge} title={profileError || "Your profile record could not be loaded. This usually means the Supabase SQL setup was not run or failed."}>
                 <div style={styles.avatar}>?</div>
-                <span style={styles.username}>Signed in</span>
+                <span style={styles.username}>{profileError ? 'Profile unavailable' : 'Signed in'}</span>
               </div>
             )}
             <button style={styles.btnGhost} onClick={handleLogout}>Log Out</button>

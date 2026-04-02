@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState('');
   const [loading, setLoading] = useState(true);
   const didInit = useRef(false);
 
@@ -30,7 +31,7 @@ export function AuthProvider({ children }) {
           setLoading(true);
           await fetchProfile(session.user.id);
         }
-        else { setProfile(null); setLoading(false); }
+        else { setProfile(null); setProfileError(''); setLoading(false); }
       }
     );
 
@@ -39,17 +40,22 @@ export function AuthProvider({ children }) {
 
   async function fetchProfile(userId) {
     try {
-      const p = await getProfile(userId);
+      setProfileError('');
+      const p = await Promise.race([
+        getProfile(userId),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Profile request timed out')), 8000)),
+      ]);
       setProfile(p);
     } catch (err) {
       setProfile(null);
+      setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
       setLoading(false);
     }
   }
 
-  const value = { session, profile, loading, isAdmin: profile?.role === 'admin' };
+  const value = { session, profile, profileError, loading, isAdmin: profile?.role === 'admin' };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
