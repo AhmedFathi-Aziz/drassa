@@ -16,32 +16,53 @@ export default function AdminUserDetail() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
+    let cancelled = false;
+
+    const withTimeout = (promise, ms, label) => Promise.race([
+      promise,
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`${label} timed out`)), ms)),
+    ]);
+
     async function load() {
+      if (cancelled) return;
       setLoading(true);
       setError('');
       try {
-        const prof = await getAdminUserProfile(userId);
-        setUserProfile(prof);
+        const prof = await withTimeout(getAdminUserProfile(userId), 12000, 'Profile request');
+        if (!cancelled) setUserProfile(prof);
       }
       catch (err) {
         console.error(err);
-        setError(err?.message || 'Failed to load user profile');
+        if (!cancelled) setError(err?.message || 'Failed to load user profile');
       }
 
       try {
-        const userFiles = await getFilesForUser(userId);
-        setFiles(userFiles || []);
+        const userFiles = await withTimeout(getFilesForUser(userId), 12000, 'Files request');
+        if (!cancelled) setFiles(userFiles || []);
       } catch (err) {
         console.error(err);
-        setError(prev => prev || (err?.message || 'Failed to load user files'));
+        if (!cancelled) setError(prev => prev || (err?.message || 'Failed to load user files'));
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
+    function onVisible() {
+      // If browser throttled background requests, retry once on return.
+      if (document.visibilityState === 'visible') setReloadTick(t => t + 1);
+    }
+
     load();
-  }, [userId]);
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [userId, reloadTick]);
 
   async function handleLogout() {
     try {

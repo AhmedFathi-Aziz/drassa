@@ -57,10 +57,14 @@ export function AuthProvider({ children }) {
   async function fetchProfile(userId) {
     try {
       setProfileError('');
-      const p = await Promise.race([
-        getProfile(userId),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Profile request timed out')), 8000)),
-      ]);
+      let p;
+      try {
+        p = await getProfile(userId);
+      } catch (firstErr) {
+        // Supabase projects can be slow on first request (cold start); retry once.
+        await new Promise(resolve => setTimeout(resolve, 1200));
+        p = await getProfile(userId);
+      }
       setProfile(p);
     } catch (err) {
       setProfile(null);
