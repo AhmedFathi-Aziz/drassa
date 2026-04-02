@@ -10,6 +10,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const didInit = useRef(false);
   const bootTimeoutRef = useRef(null);
+  const hasProfileRef = useRef(false);
+
+  useEffect(() => {
+    hasProfileRef.current = !!profile;
+  }, [profile]);
 
   useEffect(() => {
     // React 18 StrictMode runs effects twice in dev; Supabase auth uses a navigator lock.
@@ -42,7 +47,7 @@ export function AuthProvider({ children }) {
         setSession(session);
         if (session?.user?.id) {
           // Token refresh can happen when tab focus changes; avoid unnecessary profile reloads.
-          if (_event === 'TOKEN_REFRESHED' && profile) {
+          if (_event === 'TOKEN_REFRESHED' && hasProfileRef.current) {
             setLoading(false);
             return;
           }
