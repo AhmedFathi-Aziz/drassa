@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminUserFileCounts, getAllProfiles, signOut } from '../lib/supabase';
+import { getAdminUserFileCounts, getAllProfiles, signOutSafe } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 function getInitials(name) {
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
 
   async function handleLogout() {
     try {
-      await signOut({ scope: 'local' });
+      await signOutSafe({ scope: 'local' });
     } catch (err) {
       console.error('Sign out failed:', err);
     } finally {

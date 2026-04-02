@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { clearLocalAuthStorage, signOut } from '../lib/supabase';
+import { clearLocalAuthStorage, signOutSafe } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 const styles = {
@@ -57,7 +57,7 @@ export default function Navbar({ showAuth = true }) {
 
   async function handleLogout() {
     try {
-      await signOut({ scope: 'local' });
+      await signOutSafe({ scope: 'local' });
     } catch (err) {
       // Even if sign-out fails, send user to a safe route.
       console.error('Sign out failed:', err);

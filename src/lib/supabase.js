@@ -61,6 +61,20 @@ export async function signOut(options = { scope: 'local' }) {
   if (error) throw error;
 }
 
+export async function signOutSafe(options = { scope: 'local' }) {
+  // Some browsers/tabs can cause auth signOut() to hang (navigator lock). Never block UI on it.
+  try {
+    await Promise.race([
+      signOut(options),
+      new Promise((resolve) => setTimeout(resolve, 3000)),
+    ]);
+  } catch {
+    // ignore
+  } finally {
+    clearLocalAuthStorage();
+  }
+}
+
 export async function getSession() {
   const { data } = await supabase.auth.getSession();
   return data.session;
