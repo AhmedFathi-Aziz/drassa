@@ -6,67 +6,68 @@ export default function Home() {
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: '#fff' }}>
       <Navbar />
 
-      {/* Hero */}
-      <div style={{
-        position: 'relative', background: 'linear-gradient(135deg,#0d2d52 0%,#1a6ab0 60%,#2d8ae0 100%)',
-        minHeight: 400, display: 'flex', alignItems: 'center', overflow: 'hidden',
+      <section style={{
+        position: 'relative',
+        minHeight: 420,
+        backgroundImage: 'linear-gradient(rgba(12,17,24,.55),rgba(12,17,24,.55)), url("https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=1600&q=80")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '42px 28px',
       }}>
-        <div style={{
-          position: 'absolute', inset: 0, opacity: .06,
-          backgroundImage: 'repeating-linear-gradient(45deg,white 0,white 1px,transparent 0,transparent 50%)',
-          backgroundSize: '24px 24px',
-        }} />
-        <div style={{ position: 'relative', zIndex: 1, padding: '64px 80px', maxWidth: 640 }}>
-          <div style={{ fontSize: 11, letterSpacing: 3, color: 'rgba(255,255,255,.7)', marginBottom: 16, fontWeight: 500, textTransform: 'uppercase' }}>
-            Development & Research Academy for Sports Science
+        <div style={{ maxWidth: 1220, margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 16 }}>
+            <div style={{ background: 'rgba(255,255,255,.86)', padding: '26px 28px', border: '1px solid rgba(255,255,255,.3)' }}>
+              <h1 style={{ fontSize: 54, color: '#fff', margin: 0, fontWeight: 700, letterSpacing: .2 }}>
+                <span style={{ color: '#fff', mixBlendMode: 'normal' }}>DRASSA - EMRILL</span>
+              </h1>
+            </div>
+            <div style={{ background: 'rgba(255,255,255,.86)', padding: '18px 20px', border: '1px solid rgba(255,255,255,.3)' }}>
+              <p style={{ margin: 0, fontSize: 31, lineHeight: 1.4, color: '#111' }}>
+                Development and Research Academy for Sports Science Activities (DRASSA)
+              </p>
+            </div>
           </div>
-          <h1 style={{ fontSize: 54, fontWeight: 700, color: '#fff', lineHeight: 1.05, letterSpacing: -1, marginBottom: 16 }}>
-            DRASSA – EMRILL
-          </h1>
-          <p style={{ fontSize: 15, color: 'rgba(255,255,255,.8)', lineHeight: 1.7, marginBottom: 32, fontWeight: 300, maxWidth: 480 }}>
-            A scientific reference for the development of sports and athletes according to the latest international standards.
-          </p>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/signup')} style={{
-              padding: '13px 28px', background: '#fff', color: '#0d4a8a', border: 'none',
-              borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: 'pointer',
-            }}>Get Started</button>
-            <button onClick={() => navigate('/login')} style={{
-              padding: '13px 28px', background: 'transparent', color: '#fff',
-              border: '1.5px solid rgba(255,255,255,.5)', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer',
-            }}>Sign In</button>
+          <div style={{ marginTop: 18, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button onClick={() => navigate('/signup')} style={{ padding: '11px 22px', borderRadius: 20, border: 'none', background: '#fff', fontWeight: 600, cursor: 'pointer' }}>Sign Up</button>
+            <button onClick={() => navigate('/login')} style={{ padding: '11px 22px', borderRadius: 20, border: '1px solid #fff', background: 'transparent', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Login</button>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Services */}
-      <div style={{ padding: '56px 80px', flex: 1 }}>
-        <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40', marginBottom: 4 }}>Our Services</h2>
-        <p style={{ fontSize: 14, color: '#868e96', marginBottom: 32 }}>Everything you need in one secure portal</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))', gap: 20 }}>
-          {[
-            { icon: '📁', title: 'Secure File Upload', desc: 'Upload PDFs, images, and videos with drag-and-drop simplicity.' },
-            { icon: '👥', title: 'User Management', desc: 'Admin panel to manage all registered users and their data.' },
-            { icon: '🖥️', title: 'Personal Dashboard', desc: 'Each user gets their own private space to manage uploads.' },
-            { icon: '🔒', title: 'Secure & Private', desc: 'Files are private. Only you and authorized admins can access your data.' },
-          ].map(card => (
-            <div key={card.title} style={{
-              background: '#fff', border: '1px solid #e9ecef', borderRadius: 14, padding: '28px 24px',
-              transition: 'border-color .2s, box-shadow .2s',
-            }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = '#1a6ab0'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(26,106,176,.08)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = '#e9ecef'; e.currentTarget.style.boxShadow = 'none'; }}
-            >
-              <div style={{ fontSize: 28, marginBottom: 14 }}>{card.icon}</div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: '#343a40', marginBottom: 8 }}>{card.title}</div>
-              <div style={{ fontSize: 13, color: '#868e96', lineHeight: 1.6 }}>{card.desc}</div>
+      <section style={{ background: '#05070b', color: '#fff', padding: '46px 28px 56px' }}>
+        <div style={{ maxWidth: 1220, margin: '0 auto' }}>
+          <h2 style={{ margin: 0, fontSize: 38, letterSpacing: 1.5 }}>VISION</h2>
+          <p style={{ marginTop: 20, fontSize: 37, lineHeight: 1.5, maxWidth: 960, color: 'rgba(255,255,255,.94)' }}>
+            To be a scientific reference for the development of sports and athletes according to the latest international standards.
+          </p>
+        </div>
+      </section>
+
+      <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 360 }}>
+        <div style={{ background: '#1a8fe0', display: 'flex', alignItems: 'center', padding: '40px 46px' }}>
+          <p style={{ color: '#fff', fontSize: 40, lineHeight: 1.6, fontWeight: 600, maxWidth: 540 }}>
+            This is the space to introduce visitors to the business or brand. Briefly explain who's behind it, what it does and what makes it unique.
+          </p>
+        </div>
+        <div style={{
+          backgroundImage: 'url("https://images.unsplash.com/photo-1530549387789-4c1017266635?auto=format&fit=crop&w=1200&q=80")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }} />
+      </section>
+
+      <section style={{ padding: '30px 28px 38px' }}>
+        <div style={{ maxWidth: 1220, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(5,1fr)', gap: 20 }}>
+          {['I.W.S.F.', 'MEDIC FIRST AID', 'AMERICAN LIFEGUARD', 'EMERGENCY FIRST RESPONSE', 'AMBULANCE'].map((name) => (
+            <div key={name} style={{ border: '1px solid #e3e7ec', borderRadius: 10, padding: '16px 10px', textAlign: 'center', fontWeight: 700, color: '#1d4f89', fontSize: 15 }}>
+              {name}
             </div>
           ))}
         </div>
-      </div>
+      </section>
 
       <footer style={{ background: '#1e2a36', color: 'rgba(255,255,255,.5)', textAlign: 'center', padding: '24px', fontSize: 12 }}>
         © 2025 DRASSA – Emrill Portal. All rights reserved. | Drassa Academy for Safety Aquatics
