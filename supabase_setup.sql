@@ -49,6 +49,33 @@ create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
 
+-- Admin-only RPC to list all non-admin users without relying on caller RLS state
+create or replace function public.admin_list_user_profiles()
+returns setof public.profiles
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  set local row_security = off;
+
+  if not exists (
+    select 1 from public.profiles
+    where id = auth.uid() and role = 'admin'
+  ) then
+    raise exception 'Forbidden';
+  end if;
+
+  return query
+  select *
+  from public.profiles
+  where role = 'user'
+  order by created_at desc;
+end;
+$$;
+
+grant execute on function public.admin_list_user_profiles() to authenticated;
+
 -- 2. FILES TABLE
 -- Stores metadata for every uploaded file
 create table public.files (

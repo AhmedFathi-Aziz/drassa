@@ -79,13 +79,19 @@ export async function getProfile(userId) {
 }
 
 export async function getAllProfiles() {
-  const { data, error } = await supabase
+  // Use an admin RPC (security definer) to avoid fragile RLS recursion/policy issues.
+  const { data, error } = await supabase.rpc('admin_list_user_profiles');
+  if (!error) return data;
+
+  // Fallback for older DB setups that don't have the RPC yet.
+  const fallback = await supabase
     .from('profiles')
     .select('*')
     .eq('role', 'user')
     .order('created_at', { ascending: false });
-  if (error) throw error;
-  return data;
+
+  if (fallback.error) throw fallback.error;
+  return fallback.data;
 }
 
 // ---- File helpers ----

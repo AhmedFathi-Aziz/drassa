@@ -9,6 +9,7 @@ export function AuthProvider({ children }) {
   const [profileError, setProfileError] = useState('');
   const [loading, setLoading] = useState(true);
   const didInit = useRef(false);
+  const bootTimeoutRef = useRef(null);
 
   useEffect(() => {
     // React 18 StrictMode runs effects twice in dev; Supabase auth uses a navigator lock.
@@ -16,12 +17,24 @@ export function AuthProvider({ children }) {
     if (didInit.current) return;
     didInit.current = true;
 
+    // Absolute guard: never keep app in auth loading forever.
+    bootTimeoutRef.current = setTimeout(() => {
+      setProfileError(prev => prev || 'Auth bootstrap timed out');
+      setLoading(false);
+    }, 12000);
+
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id);
-      else setLoading(false);
-    });
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        if (session) fetchProfile(session.user.id);
+        else setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Failed to get session:', err);
+        setProfileError(err?.message || 'Failed to get session');
+        setLoading(false);
+      });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -35,7 +48,10 @@ export function AuthProvider({ children }) {
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      if (bootTimeoutRef.current) clearTimeout(bootTimeoutRef.current);
+    };
   }, []);
 
   async function fetchProfile(userId) {
@@ -51,6 +67,10 @@ export function AuthProvider({ children }) {
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
+      if (bootTimeoutRef.current) {
+        clearTimeout(bootTimeoutRef.current);
+        bootTimeoutRef.current = null;
+      }
       setLoading(false);
     }
   }

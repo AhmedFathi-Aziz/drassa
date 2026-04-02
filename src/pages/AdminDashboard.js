@@ -19,10 +19,12 @@ export default function AdminDashboard() {
   const [users, setUsers] = useState([]);
   const [userFileCounts, setUserFileCounts] = useState({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     async function load() {
       try {
+        setError('');
         const profiles = await getAllProfiles();
         setUsers(profiles || []);
         // Load file counts for each user
@@ -36,6 +38,7 @@ export default function AdminDashboard() {
         setUserFileCounts(counts);
       } catch (err) {
         console.error(err);
+        setError(err?.message || 'Failed to load users');
       } finally {
         setLoading(false);
       }
@@ -87,6 +90,11 @@ export default function AdminDashboard() {
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40' }}>User Management</h2>
           <p style={{ fontSize: 13, color: '#868e96', marginTop: 4 }}>View all registered users and their uploaded files</p>
         </div>
+        {error && (
+          <div style={{ marginTop: 12, marginBottom: 14, background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e24b4a' }}>
+            {error}
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 16, margin: '24px 0' }}>
