@@ -26,57 +26,59 @@ export function AuthProvider({ children }) {
   // "loading" should only block routing until we know session exists or not.
   // Profile loading can be slow/stall (network, cold start) and must not freeze the app.
   const [loading, setLoading] = useState(true);
-  const didInit = useRef(false);
-  const hasProfileRef = useRef(false);
+  /** Latest profile for fetchProfile / auth callbacks (avoids stale closure). */
+  const profileRef = useRef(null);
 
   useEffect(() => {
-    hasProfileRef.current = !!profile;
+    profileRef.current = profile;
   }, [profile]);
 
   useEffect(() => {
-    // React 18 StrictMode runs effects twice in dev; Supabase auth uses a navigator lock.
-    // Guard to avoid concurrent auth calls/subscriptions that can spam "lock ... stole it" errors.
-    if (didInit.current) return;
-    didInit.current = true;
+    let active = true;
 
     // Get initial session
-    supabase.auth.getSession()
+    supabase.auth
+      .getSession()
       .then(({ data: { session } }) => {
+        if (!active) return;
         const validSession = session?.user?.id ? session : null;
         setSession(validSession);
-        // Session is known now; unblock routing immediately.
         setLoading(false);
         if (validSession?.user?.id) fetchProfile(validSession.user);
       })
       .catch((err) => {
+        if (!active) return;
         console.error('Failed to get session:', err);
         setProfileError(err?.message || 'Failed to get session');
         setLoading(false);
       });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const validSession = session?.user?.id ? session : null;
-        setSession(validSession);
-        // Unblock routing immediately on auth event; profile refresh happens in background.
-        setLoading(false);
-        if (validSession?.user?.id) {
-          // Token refresh can happen when tab focus changes; avoid unnecessary profile reloads.
-          if (_event === 'TOKEN_REFRESHED' && hasProfileRef.current) {
-            return;
-          }
-          await fetchProfile(validSession.user);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!active) return;
+      const validSession = session?.user?.id ? session : null;
+      setSession(validSession);
+      setLoading(false);
+      if (validSession?.user?.id) {
+        const uid = validSession.user.id;
+        // Token refresh / duplicate init: do not refetch or flash the route loading screen.
+        if (_event === 'TOKEN_REFRESHED' && profileRef.current?.id === uid) {
+          return;
         }
-        else {
-          setProfile(null);
-          setProfileError('');
-          setProfileLoading(false);
+        if (_event === 'INITIAL_SESSION' && profileRef.current?.id === uid) {
+          return;
         }
+        await fetchProfile(validSession.user);
+      } else {
+        setProfile(null);
+        setProfileError('');
+        setProfileLoading(false);
       }
-    );
+    });
 
     return () => {
+      active = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -92,7 +94,11 @@ export function AuthProvider({ children }) {
       return;
     }
 
-    setProfileLoading(true);
+    // Only block protected/guest routes when we do not yet have this user's profile.
+    const alreadyHaveUser = profileRef.current?.id === userId;
+    if (!alreadyHaveUser) {
+      setProfileLoading(true);
+    }
     try {
       setProfileError('');
       let p;
