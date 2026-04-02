@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { supabase, getProfile, getProfileByEmail } from '../lib/supabase';
+import { signOutSafe, supabase, getProfile, getProfileByEmail } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
@@ -112,7 +112,16 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const value = { session, profile, profileError, loading, isAdmin: profile?.role === 'admin' };
+  async function logout() {
+    // Optimistically clear UI state immediately, then sign out in background.
+    setSession(null);
+    setProfile(null);
+    setProfileError('');
+    setLoading(false);
+    signOutSafe({ scope: 'local' }).catch(() => {});
+  }
+
+  const value = { session, profile, profileError, loading, isAdmin: profile?.role === 'admin', logout };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

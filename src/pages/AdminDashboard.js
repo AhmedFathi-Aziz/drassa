@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getAdminUserFileCounts, getAllProfiles, signOutSafe } from '../lib/supabase';
+import { getAdminUserFileCounts, getAllProfiles } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
 function getInitials(name) {
@@ -15,7 +15,7 @@ const sidebarStyle = {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  useAuth();
+  const { logout } = useAuth();
   const [users, setUsers] = useState([]);
   const [userFileCounts, setUserFileCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -45,7 +45,7 @@ export default function AdminDashboard() {
 
   async function handleLogout() {
     try {
-      await signOutSafe({ scope: 'local' });
+      await logout();
     } catch (err) {
       console.error('Sign out failed:', err);
     } finally {

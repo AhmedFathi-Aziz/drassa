@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getAdminUserProfile, getFilesForUser, signOutSafe } from '../lib/supabase';
+import { getAdminUserProfile, getFilesForUser } from '../lib/supabase';
 import FileCard from '../components/FileCard';
+import { useAuth } from '../lib/AuthContext';
 
 const detailCache = new Map(); // userId -> { profile, files, ts }
 
@@ -13,6 +14,7 @@ function getInitials(name) {
 export default function AdminUserDetail() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [userProfile, setUserProfile] = useState(null);
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,7 +81,7 @@ export default function AdminUserDetail() {
 
   async function handleLogout() {
     try {
-      await signOutSafe({ scope: 'local' });
+      await logout();
     } catch (err) {
       console.error('Sign out failed:', err);
     } finally {
