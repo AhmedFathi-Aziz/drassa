@@ -3,6 +3,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { getAdminUserProfile, getFilesForUser } from '../lib/supabase';
 import FileCard from '../components/FileCard';
 import { useAuth } from '../lib/AuthContext';
+import Navbar from '../components/Navbar';
+
+const NAV_OFFSET = 144;
 
 const detailCache = new Map(); // userId -> { profile, files, ts }
 
@@ -91,10 +94,24 @@ export default function AdminUserDetail() {
 
   const filtered = filter === 'all' ? files : files.filter(f => f.file_type === filter);
 
+  const sidebarStyle = {
+    width: 220,
+    background: '#1e2a36',
+    flexShrink: 0,
+    display: 'flex',
+    flexDirection: 'column',
+    position: 'sticky',
+    top: NAV_OFFSET,
+    alignSelf: 'flex-start',
+    height: `calc(100vh - ${NAV_OFFSET}px)`,
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
+      <Navbar />
+      <div style={{ display: 'flex', marginTop: NAV_OFFSET, minHeight: `calc(100vh - ${NAV_OFFSET}px)` }}>
       {/* Sidebar */}
-      <div style={{ width: 220, background: '#1e2a36', minHeight: '100vh', flexShrink: 0, display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh' }}>
+      <div style={sidebarStyle}>
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
           <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 2 }}>DRASSA</div>
           <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Admin Panel</div>
@@ -127,7 +144,7 @@ export default function AdminUserDetail() {
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, padding: 32, background: '#f8f9fa', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: 32, background: '#ffffff', overflowY: 'auto' }}>
         {error && (
           <div style={{ marginBottom: 14, background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e24b4a' }}>
             {error}
@@ -199,6 +216,7 @@ export default function AdminUserDetail() {
             </div>
           )}
         </div>
+      </div>
       </div>
     </div>
   );

@@ -1,53 +1,46 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+@layer utilities {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
 
-:root {
-  --blue: #1a6ab0;
-  --blue-dark: #0d4a8a;
-  --blue-mid: #2d8ae0;
-  --blue-light: #e8f2fb;
-  --blue-xlight: #f0f7fd;
-  --white: #ffffff;
-  --gray-50: #f8f9fa;
-  --gray-100: #f1f3f5;
-  --gray-200: #e9ecef;
-  --gray-300: #dee2e6;
-  --gray-400: #ced4da;
-  --gray-500: #adb5bd;
-  --gray-600: #868e96;
-  --gray-700: #495057;
-  --gray-800: #343a40;
-  --gray-900: #212529;
-  --danger: #e24b4a;
-  --danger-light: #fff0f0;
-  --success: #3b6d11;
-  --success-light: #eaf3de;
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
-  --shadow-md: 0 4px 16px rgba(0,0,0,.08);
+  .editorial-spacing {
+    padding-left: clamp(1rem, 5vw, 8rem);
+    padding-right: clamp(1rem, 5vw, 8rem);
+  }
+
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px);
+  }
+
+  .hero-gradient {
+    background: linear-gradient(to right, rgba(0, 58, 99, 0.9) 0%, rgba(0, 58, 99, 0.4) 50%, transparent 100%);
+  }
+
+  @keyframes drMarkPulse {
+    0%, 100% {
+      transform: scale(1);
+      box-shadow: 0 2px 12px rgba(0, 58, 99, 0.08);
+    }
+    50% {
+      transform: scale(1.03);
+      box-shadow: 0 6px 22px rgba(0, 58, 99, 0.14);
+    }
+  }
+
+  .dr-mark-anim {
+    animation: drMarkPulse 3.5s ease-in-out infinite;
+  }
 }
 
 body {
-  font-family: 'Montserrat', sans-serif;
-  background: var(--gray-50);
-  color: var(--gray-800);
-  line-height: 1.6;
-  min-height: 100vh;
+  margin: 0;
+  font-family: Inter, system-ui, sans-serif;
+  background: #ffffff;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-
-a { text-decoration: none; color: inherit; }
-
-button { font-family: 'Montserrat', sans-serif; cursor: pointer; }
-
-input, select, textarea {
-  font-family: 'Montserrat', sans-serif;
-  font-size: 14px;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 99px; }

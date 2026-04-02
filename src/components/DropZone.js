@@ -52,7 +52,7 @@ export default function DropZone({ onUploaded }) {
         padding: '48px 24px',
         textAlign: 'center',
         cursor: 'pointer',
-        background: isDragActive ? '#e8f2fb' : '#f8f9fa',
+        background: isDragActive ? '#e8f2fb' : '#ffffff',
         transition: 'all .2s',
       }}>
         <input {...getInputProps()} />
@@ -85,7 +85,7 @@ export default function DropZone({ onUploaded }) {
         <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {uploads.map(u => (
             <div key={u.name} style={{
-              background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 8,
+              background: '#ffffff', border: '1px solid #e9ecef', borderRadius: 8,
               padding: '12px 14px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

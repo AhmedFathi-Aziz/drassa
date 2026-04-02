@@ -7,7 +7,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables. Check your .env file.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'implicit',
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+  },
+});
 
 function getAuthStorageKeyPrefix() {
   try {
@@ -36,11 +44,13 @@ export function clearLocalAuthStorage() {
 // ---- Auth helpers ----
 
 export async function signUp({ username, fullName, email, password }) {
+  const emailRedirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: { username, full_name: fullName, role: 'user' },
+      emailRedirectTo,
     },
   });
   if (error) throw error;
@@ -51,6 +61,15 @@ export async function signIn({ email, password }) {
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
+}
+
+/** Sends password reset email. Add /reset-password to Supabase Redirect URLs. */
+export async function requestPasswordReset(email) {
+  const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/reset-password` : undefined;
+  const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    redirectTo,
+  });
+  if (error) throw error;
 }
 
 export async function signOut(options = { scope: 'local' }) {

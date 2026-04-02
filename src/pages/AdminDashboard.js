@@ -2,15 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminUserFileCounts, getAllProfiles } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
+import Navbar from '../components/Navbar';
 
 function getInitials(name) {
   if (!name) return '?';
   return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 }
 
+const NAV_OFFSET = 144;
+
 const sidebarStyle = {
-  width: 220, background: '#1e2a36', minHeight: '100vh', flexShrink: 0,
-  display: 'flex', flexDirection: 'column', position: 'sticky', top: 0, height: '100vh',
+  width: 220,
+  background: '#1e2a36',
+  flexShrink: 0,
+  display: 'flex',
+  flexDirection: 'column',
+  position: 'sticky',
+  top: NAV_OFFSET,
+  alignSelf: 'flex-start',
+  height: `calc(100vh - ${NAV_OFFSET}px)`,
 };
 
 export default function AdminDashboard() {
@@ -56,7 +66,9 @@ export default function AdminDashboard() {
   const totalFiles = Object.values(userFileCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
+    <div style={{ minHeight: '100vh' }}>
+      <Navbar />
+      <div style={{ display: 'flex', marginTop: NAV_OFFSET, minHeight: `calc(100vh - ${NAV_OFFSET}px)` }}>
       {/* Sidebar */}
       <div style={sidebarStyle}>
         <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
@@ -82,7 +94,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* Main */}
-      <div style={{ flex: 1, padding: 32, background: '#f8f9fa', overflowY: 'auto' }}>
+      <div style={{ flex: 1, padding: 32, background: '#ffffff', overflowY: 'auto' }}>
         <div style={{ marginBottom: 8 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40' }}>User Management</h2>
           <p style={{ fontSize: 13, color: '#868e96', marginTop: 4 }}>View all registered users and their uploaded files</p>
@@ -108,7 +120,7 @@ export default function AdminDashboard() {
 
         {/* Table */}
         <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr', padding: '12px 20px', background: '#f8f9fa', borderBottom: '1px solid #e9ecef', fontSize: 11, fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: .5 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr', padding: '12px 20px', background: '#ffffff', borderBottom: '1px solid #e9ecef', fontSize: 11, fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: .5 }}>
             <div>User</div><div>Email</div><div>Files</div><div>Action</div>
           </div>
 
@@ -138,6 +150,7 @@ export default function AdminDashboard() {
             </div>
           ))}
         </div>
+      </div>
       </div>
     </div>
   );

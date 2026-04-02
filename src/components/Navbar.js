@@ -1,116 +1,111 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { clearLocalAuthStorage } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
-const styles = {
-  nav: {
-    background: '#fff',
-    borderBottom: '1px solid #e9ecef',
-    padding: '0 32px',
-    height: 64,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    position: 'sticky',
-    top: 0,
-    zIndex: 100,
-    boxShadow: '0 1px 3px rgba(0,0,0,.04)',
-  },
-  brand: { display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' },
-  logoCircle: {
-    width: 42, height: 42, background: '#1a6ab0', borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontWeight: 700, fontSize: 13, letterSpacing: 0.5,
-  },
-  brandText: { display: 'flex', flexDirection: 'column', lineHeight: 1.2 },
-  brandMain: { fontSize: 14, fontWeight: 700, color: '#0d4a8a', letterSpacing: 1 },
-  brandSub: { fontSize: 9, color: '#868e96', fontWeight: 400, textTransform: 'uppercase', letterSpacing: 0.5 },
-  links: { display: 'flex', gap: 8, alignItems: 'center' },
-  btnGhost: {
-    padding: '8px 18px', background: 'transparent', color: '#495057',
-    border: '1px solid #dee2e6', borderRadius: 8, fontSize: 13, fontWeight: 500,
-    cursor: 'pointer', transition: 'all .2s',
-  },
-  btnPrimary: {
-    padding: '8px 18px', background: '#1a6ab0', color: '#fff',
-    border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500,
-    cursor: 'pointer', transition: 'all .2s',
-  },
-  userBadge: { display: 'flex', alignItems: 'center', gap: 10 },
-  avatar: {
-    width: 34, height: 34, background: '#1a6ab0', borderRadius: '50%',
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    color: '#fff', fontSize: 12, fontWeight: 600,
-  },
-  username: { fontSize: 13, color: '#495057', fontWeight: 500 },
-};
-
-function getInitials(name) {
-  if (!name) return '?';
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
-}
-
-export default function Navbar({ showAuth = true }) {
+/**
+ * Fixed marketing nav (same as homepage) — use on all routes.
+ * Content below should clear the fixed bar (use ~144px / Tailwind `pt-36`).
+ */
+export default function Navbar() {
   const navigate = useNavigate();
-  const { session, profile, profileError, loading, logout } = useAuth();
-  const hasValidSession = !!session?.user?.id;
+  const location = useLocation();
+  const { session, profile, loading, logout } = useAuth();
+  const hasSession = !!session?.user?.id;
+
+  const dashboardPath = profile?.role === 'admin' ? '/admin' : '/dashboard';
+  const path = location.pathname;
+  const isHome = path === '/';
+  const isPortal = path.startsWith('/dashboard') || path.startsWith('/admin');
 
   async function handleLogout() {
     try {
       await logout();
-    } catch (err) {
-      // Even if sign-out fails, send user to a safe route.
-      console.error('Sign out failed:', err);
+    } catch (e) {
+      console.error(e);
     } finally {
-      // Ensure UI fully resets even if auth events are flaky.
       clearLocalAuthStorage();
       window.location.href = '/';
     }
   }
 
+  const linkIdle = 'text-[#53606b] dark:text-slate-400 font-medium hover:text-[#005288] dark:hover:text-blue-200 transition-colors bg-transparent border-0 p-0 cursor-pointer';
+  const linkActive = 'text-[#003a63] dark:text-blue-300 font-semibold border-b-2 border-[#003a63] pb-1';
+
   return (
-    <nav style={styles.nav}>
-      <div style={styles.brand} onClick={() => navigate('/')}>
-        <div style={styles.logoCircle}>DR</div>
-        <div style={styles.brandText}>
-          <span style={styles.brandMain}>DRASSA</span>
-          <span style={styles.brandSub}>Emrill Portal</span>
-        </div>
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-white flex justify-between items-center px-8 py-3 font-headline tracking-tight">
+      <button
+        type="button"
+        onClick={() => navigate('/')}
+        className="bg-transparent border-0 p-0 cursor-pointer shrink-0 flex items-center"
+        aria-label="Home"
+      >
+        <img
+          alt="DRASSA — Drassa Academy for Safety Aquatics"
+          className="h-[72px] md:h-[88px] w-auto max-w-[min(260px,42vw)] object-contain object-left"
+          src="/drassa-logo.png"
+        />
+      </button>
+
+      <div className="hidden md:flex items-center gap-8">
+        {isHome ? (
+          <span className={linkActive}>Home</span>
+        ) : (
+          <button type="button" className={linkIdle} onClick={() => navigate('/')}>
+            Home
+          </button>
+        )}
+        {isPortal ? (
+          <span className={linkActive}>Emrill Portal Dashboard</span>
+        ) : (
+          <button
+            type="button"
+            className={linkIdle}
+            onClick={() => navigate(hasSession ? dashboardPath : '/login')}
+          >
+            Emrill Portal Dashboard
+          </button>
+        )}
       </div>
 
-      <div style={styles.links}>
-        {hasValidSession ? (
+      <div className="flex items-center gap-4 shrink-0">
+        {loading ? (
+          <span className="text-secondary text-sm">…</span>
+        ) : hasSession ? (
           <>
-            {loading ? (
-              <div style={styles.userBadge} aria-label="Loading profile" title={profileError || undefined}>
-                <div style={{ ...styles.avatar, background: '#adb5bd' }}>…</div>
-                <span style={styles.username}>Loading…</span>
-              </div>
-            ) : profile ? (
-              <>
-                <div style={styles.userBadge}>
-                  <div style={styles.avatar}>{getInitials(profile.full_name)}</div>
-                  <span style={styles.username}>{profile.full_name}</span>
-                </div>
-                {profile.role === 'admin' && (
-                  <button style={styles.btnGhost} onClick={() => navigate('/admin')}>Admin Panel</button>
-                )}
-              </>
-            ) : (
-              <div style={styles.userBadge} title={profileError || "Your profile record could not be loaded. This usually means the Supabase SQL setup was not run or failed."}>
-                <div style={styles.avatar}>?</div>
-                <span style={styles.username}>Signed in</span>
-              </div>
-            )}
-            <button style={styles.btnGhost} onClick={handleLogout}>Log Out</button>
+            <button
+              type="button"
+              onClick={() => navigate(dashboardPath)}
+              className="px-6 py-2 text-primary font-medium transition-opacity duration-200 hover:opacity-80"
+            >
+              Dashboard
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
+            >
+              Log out
+            </button>
           </>
-        ) : showAuth ? (
+        ) : (
           <>
-            <button style={styles.btnGhost} onClick={() => navigate('/login')}>Log In</button>
-            <button style={styles.btnPrimary} onClick={() => navigate('/signup')}>Sign Up</button>
+            <button
+              type="button"
+              onClick={() => navigate('/login')}
+              className="px-6 py-2 text-primary font-medium transition-opacity duration-200 hover:opacity-80"
+            >
+              Login
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/signup')}
+              className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
+            >
+              Sign Up
+            </button>
           </>
-        ) : null}
+        )}
       </div>
     </nav>
   );

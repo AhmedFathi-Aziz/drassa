@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signIn } from '../lib/supabase';
+import { signIn, requestPasswordReset } from '../lib/supabase';
 import Navbar from '../components/Navbar';
+import MarketingFooter from '../components/MarketingFooter';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,6 +11,9 @@ export default function Login() {
   const [error, setError] = useState('');
   const [status, setStatus] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   async function handleSubmit(e) {
     e?.preventDefault?.();
@@ -31,13 +35,45 @@ export default function Login() {
     }
   }
 
+  async function handleForgotSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setResetSent(false);
+    if (!email.trim()) {
+      setError('Enter your email above to receive a reset link.');
+      return;
+    }
+    setResetLoading(true);
+    try {
+      await requestPasswordReset(email.trim());
+      setResetSent(true);
+      setStatus('');
+    } catch (err) {
+      setError(err?.message || 'Could not send reset email.');
+    } finally {
+      setResetLoading(false);
+    }
+  }
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar showAuth={false} />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: '#f8f9fa' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
+      <Navbar />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: '#ffffff' }}>
         <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 20, padding: '44px 40px', width: '100%', maxWidth: 440 }}>
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ width: 56, height: 56, background: '#1a6ab0', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, marginBottom: 12 }}>DR</div>
+            <img
+              src="/drassa-logo.png"
+              alt="DRASSA — Drassa Academy for Safety Aquatics"
+              style={{
+                height: 128,
+                width: 'auto',
+                maxWidth: 'min(100%, 220px)',
+                margin: '0 auto 14px',
+                display: 'block',
+                objectFit: 'contain',
+                objectPosition: 'center',
+              }}
+            />
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40', marginBottom: 4 }}>Welcome Back</h2>
             <p style={{ fontSize: 13, color: '#868e96' }}>Sign in to your DRASSA – Emrill account</p>
           </div>
@@ -64,7 +100,7 @@ export default function Login() {
                 onBlur={e => e.target.style.borderColor = '#dee2e6'}
               />
             </div>
-            <div style={{ marginBottom: 16 }}>
+            <div style={{ marginBottom: 8 }}>
               <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: '#495057', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .3 }}>Password</label>
               <input
                 type="password" value={password} onChange={e => setPassword(e.target.value)} required
@@ -74,6 +110,43 @@ export default function Login() {
                 onBlur={e => e.target.style.borderColor = '#dee2e6'}
               />
             </div>
+            <div style={{ textAlign: 'right', marginBottom: 16 }}>
+              <button
+                type="button"
+                onClick={() => { setForgotOpen((o) => !o); setError(''); setResetSent(false); }}
+                style={{ background: 'none', border: 'none', color: '#1a6ab0', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: 0 }}
+              >
+                Forgot password?
+              </button>
+            </div>
+            {forgotOpen && (
+              <div style={{ background: '#f8f9fa', border: '1px solid #e9ecef', borderRadius: 10, padding: '14px 16px', marginBottom: 16 }}>
+                <p style={{ fontSize: 12, color: '#495057', marginBottom: 10 }}>
+                  We will email you a link to set a new password (use the email field above).
+                </p>
+                {resetSent && (
+                  <p style={{ fontSize: 13, color: '#2f9e44', marginBottom: 8 }}>Check your inbox for the reset link.</p>
+                )}
+                <button
+                  type="button"
+                  onClick={handleForgotSubmit}
+                  disabled={resetLoading}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    background: resetLoading ? '#adb5bd' : '#343a40',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: resetLoading ? 'not-allowed' : 'pointer',
+                  }}
+                >
+                  {resetLoading ? 'Sending…' : 'Send reset link'}
+                </button>
+              </div>
+            )}
             <button type="submit" onClick={handleSubmit} disabled={loading} style={{
               width: '100%', padding: 13, background: loading ? '#adb5bd' : '#1a6ab0', color: '#fff',
               border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer', marginTop: 8,
@@ -88,6 +161,7 @@ export default function Login() {
           </p>
         </div>
       </div>
+      <MarketingFooter />
     </div>
   );
 }

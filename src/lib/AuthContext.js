@@ -21,6 +21,8 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileError, setProfileError] = useState('');
+  /** True while resolving the profiles row for the current session (gates role-based routes). */
+  const [profileLoading, setProfileLoading] = useState(false);
   // "loading" should only block routing until we know session exists or not.
   // Profile loading can be slow/stall (network, cold start) and must not freeze the app.
   const [loading, setLoading] = useState(true);
@@ -66,7 +68,11 @@ export function AuthProvider({ children }) {
           }
           await fetchProfile(validSession.user);
         }
-        else { setProfile(null); setProfileError(''); }
+        else {
+          setProfile(null);
+          setProfileError('');
+          setProfileLoading(false);
+        }
       }
     );
 
@@ -81,10 +87,12 @@ export function AuthProvider({ children }) {
     if (!userId) {
       setProfile(null);
       setProfileError('');
+      setProfileLoading(false);
       setLoading(false);
       return;
     }
 
+    setProfileLoading(true);
     try {
       setProfileError('');
       let p;
@@ -110,7 +118,7 @@ export function AuthProvider({ children }) {
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
-      // Do not toggle global loading here; routing is already unblocked.
+      setProfileLoading(false);
     }
   }
 
@@ -119,11 +127,20 @@ export function AuthProvider({ children }) {
     setSession(null);
     setProfile(null);
     setProfileError('');
+    setProfileLoading(false);
     setLoading(false);
     signOutSafe({ scope: 'local' }).catch(() => {});
   }
 
-  const value = { session, profile, profileError, loading, isAdmin: profile?.role === 'admin', logout };
+  const value = {
+    session,
+    profile,
+    profileError,
+    loading,
+    profileLoading,
+    isAdmin: profile?.role === 'admin',
+    logout,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

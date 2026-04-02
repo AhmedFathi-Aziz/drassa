@@ -8,23 +8,19 @@ import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUserDetail from './pages/AdminUserDetail';
+import ResetPassword from './pages/ResetPassword';
+import AuthLoadingScreen from './components/AuthLoadingScreen';
 
 function ProtectedRoute({ children, adminOnly = false }) {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, profileLoading } = useAuth();
   const hasValidSession = !!session?.user?.id;
 
-  if (loading) return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ width: 40, height: 40, border: '3px solid #e9ecef', borderTopColor: '#1a6ab0', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }}></div>
-        <p style={{ color: '#868e96', fontSize: 13 }}>Loading...</p>
-      </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
+  if (loading) return <AuthLoadingScreen />;
 
   if (!hasValidSession) return <Navigate to="/login" replace />;
-  // During temporary profile fetch issues, avoid hard redirect loops.
+
+  if (profileLoading) return <AuthLoadingScreen />;
+
   if (adminOnly && profile && profile.role !== 'admin') return <Navigate to="/dashboard" replace />;
   if (!adminOnly && profile?.role === 'admin') return <Navigate to="/admin" replace />;
 
@@ -32,9 +28,9 @@ function ProtectedRoute({ children, adminOnly = false }) {
 }
 
 function GuestRoute({ children }) {
-  const { session, profile, loading } = useAuth();
+  const { session, profile, loading, profileLoading } = useAuth();
   const hasValidSession = !!session?.user?.id;
-  if (loading) return null;
+  if (loading || profileLoading) return <AuthLoadingScreen />;
   if (hasValidSession) {
     if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
@@ -50,6 +46,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
           <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/user/:userId" element={<ProtectedRoute adminOnly><AdminUserDetail /></ProtectedRoute>} />

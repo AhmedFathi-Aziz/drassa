@@ -46,7 +46,7 @@ export default function UserDashboard() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
       <Navbar />
       <div style={{ background: '#fff', borderBottom: '1px solid #e9ecef', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>

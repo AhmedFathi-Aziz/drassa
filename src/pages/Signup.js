@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signUp } from '../lib/supabase';
 import Navbar from '../components/Navbar';
+import MarketingFooter from '../components/MarketingFooter';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -33,7 +34,7 @@ export default function Signup() {
         setTimeout(() => navigate('/login'), 800);
         return;
       }
-      // Auth context will pick up the new session automatically and routes redirect
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.message || 'Signup failed. Try a different email or username.');
     } finally {
@@ -51,12 +52,24 @@ export default function Signup() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      <Navbar showAuth={false} />
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: '#f8f9fa' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
+      <Navbar />
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: '#ffffff' }}>
         <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 20, padding: '44px 40px', width: '100%', maxWidth: 440 }}>
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <div style={{ width: 56, height: 56, background: '#1a6ab0', borderRadius: '50%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 14, marginBottom: 12 }}>DR</div>
+            <img
+              src="/drassa-logo.png"
+              alt="DRASSA — Drassa Academy for Safety Aquatics"
+              style={{
+                height: 128,
+                width: 'auto',
+                maxWidth: 'min(100%, 220px)',
+                margin: '0 auto 14px',
+                display: 'block',
+                objectFit: 'contain',
+                objectPosition: 'center',
+              }}
+            />
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40', marginBottom: 4 }}>Create Account</h2>
             <p style={{ fontSize: 13, color: '#868e96' }}>Join the DRASSA – Emrill Portal</p>
           </div>
@@ -105,6 +118,7 @@ export default function Signup() {
           </p>
         </div>
       </div>
+      <MarketingFooter />
     </div>
   );
 }
