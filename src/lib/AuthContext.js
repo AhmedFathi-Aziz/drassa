@@ -41,6 +41,11 @@ export function AuthProvider({ children }) {
       async (_event, session) => {
         setSession(session);
         if (session?.user?.id) {
+          // Token refresh can happen when tab focus changes; avoid unnecessary profile reloads.
+          if (_event === 'TOKEN_REFRESHED' && profile) {
+            setLoading(false);
+            return;
+          }
           setLoading(true);
           await fetchProfile(session.user.id, session.user.email);
         }
@@ -80,7 +85,9 @@ export function AuthProvider({ children }) {
       }
       setProfile(p);
     } catch (err) {
-      setProfile(null);
+      // Preserve existing profile on transient failures (e.g. tab background throttling).
+      // Only clear when we never had a profile yet.
+      setProfile(prev => prev || null);
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
