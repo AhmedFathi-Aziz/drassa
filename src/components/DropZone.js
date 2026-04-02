@@ -11,7 +11,7 @@ const ACCEPTED = {
 
 export default function DropZone({ onUploaded }) {
   const { session } = useAuth();
-  const [uploads, setUploads] = useState([]); // { name, progress, status }
+  const [uploads, setUploads] = useState([]); // { name, progress?, status }
 
   const updateUpload = (name, patch) => {
     setUploads(prev => prev.map(u => u.name === name ? { ...u, ...patch } : u));
@@ -20,21 +20,12 @@ export default function DropZone({ onUploaded }) {
   const onDrop = useCallback(async (acceptedFiles) => {
     if (!session) return;
 
-    const newUploads = acceptedFiles.map(f => ({ name: f.name, progress: 0, status: 'uploading' }));
+    const newUploads = acceptedFiles.map(f => ({ name: f.name, status: 'uploading' }));
     setUploads(prev => [...newUploads, ...prev]);
 
     for (const file of acceptedFiles) {
       try {
-        // Simulate progress ticks while uploading
-        let tick = 0;
-        const interval = setInterval(() => {
-          tick = Math.min(tick + Math.floor(Math.random() * 15) + 5, 85);
-          updateUpload(file.name, { progress: tick });
-        }, 200);
-
         const uploaded = await uploadFile(file, session.user.id);
-
-        clearInterval(interval);
         updateUpload(file.name, { progress: 100, status: 'done' });
 
         if (onUploaded) onUploaded(uploaded);
@@ -105,14 +96,15 @@ export default function DropZone({ onUploaded }) {
                   <div style={{
                     height: '100%', borderRadius: 99, transition: 'width .3s',
                     background: u.status === 'error' ? '#e24b4a' : '#1a6ab0',
-                    width: u.status === 'error' ? '100%' : `${u.progress}%`,
+                    width: u.status === 'error' ? '100%' : (u.status === 'uploading' ? '100%' : `${u.progress ?? 0}%`),
+                    opacity: u.status === 'uploading' ? 0.45 : 1,
                   }} />
                 </div>
                 <span
                   title={u.status === 'error' ? (u.error || 'Upload failed') : undefined}
                   style={{ fontSize: 12, fontWeight: 600, minWidth: 40, textAlign: 'right', color: u.status === 'error' ? '#e24b4a' : '#1a6ab0' }}
                 >
-                  {u.status === 'error' ? 'Error' : u.status === 'done' ? '✓' : `${u.progress}%`}
+                  {u.status === 'error' ? 'Error' : u.status === 'done' ? '✓' : 'Uploading…'}
                 </span>
               </div>
               {u.status === 'error' && (
