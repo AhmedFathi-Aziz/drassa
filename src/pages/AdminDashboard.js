@@ -11,6 +11,10 @@ function getInitials(name) {
 
 const NAV_OFFSET = 144;
 
+/** Show list immediately when returning to this page; refresh in background. */
+let adminListCache = null; // { users, userFileCounts, ts }
+const ADMIN_LIST_CACHE_TTL_MS = 2 * 60 * 1000;
+
 const sidebarStyle = {
   width: 220,
   background: '#1e2a36',
@@ -32,25 +36,48 @@ export default function AdminDashboard() {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
+      const stale =
+        !adminListCache || Date.now() - adminListCache.ts > ADMIN_LIST_CACHE_TTL_MS;
+      if (adminListCache && !stale) {
+        setUsers(adminListCache.users || []);
+        setUserFileCounts(adminListCache.userFileCounts || {});
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+      setError('');
+
       try {
-        setError('');
         const profiles = await getAllProfiles();
+        if (cancelled) return;
         setUsers(profiles || []);
 
-        // Use aggregated counts to avoid per-user query failures.
         const counts = {};
         const countRows = await getAdminUserFileCounts();
+        if (cancelled) return;
         for (const row of countRows || []) counts[row.user_id] = Number(row.total || 0);
         setUserFileCounts(counts);
+
+        adminListCache = {
+          users: profiles || [],
+          userFileCounts: counts,
+          ts: Date.now(),
+        };
       } catch (err) {
         console.error(err);
-        setError(err?.message || 'Failed to load users');
+        if (!cancelled) setError(err?.message || 'Failed to load users');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleLogout() {

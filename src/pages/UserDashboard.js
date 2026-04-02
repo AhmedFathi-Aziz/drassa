@@ -1,9 +1,13 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../lib/AuthContext';
 import { getUserFiles } from '../lib/supabase';
 import Navbar from '../components/Navbar';
 import DropZone from '../components/DropZone';
 import FileCard from '../components/FileCard';
+
+/** Avoid empty "Loading…" when revisiting the dashboard; refresh in background. */
+const filesByUserId = new Map();
+const FILES_CACHE_TTL_MS = 2 * 60 * 1000;
 
 function StatCard({ label, value, color = '#1a6ab0' }) {
   return (
@@ -16,30 +20,65 @@ function StatCard({ label, value, color = '#1a6ab0' }) {
 
 export default function UserDashboard() {
   const { session, profile } = useAuth();
+  const userId = session?.user?.id;
   const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
 
-  const loadFiles = useCallback(async () => {
-    if (!session) return;
-    try {
-      const data = await getUserFiles(session.user.id);
-      setFiles(data || []);
-    } catch (err) {
-      console.error('Failed to load files:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [session]);
+  useEffect(() => {
+    let cancelled = false;
 
-  useEffect(() => { loadFiles(); }, [loadFiles]);
+    if (!userId) {
+      setFiles([]);
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const cached = filesByUserId.get(userId);
+    const cacheOk = cached && Date.now() - cached.ts < FILES_CACHE_TTL_MS;
+    if (cacheOk) {
+      setFiles(cached.files);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    (async () => {
+      try {
+        const data = await getUserFiles(userId);
+        if (cancelled) return;
+        const list = data || [];
+        setFiles(list);
+        filesByUserId.set(userId, { files: list, ts: Date.now() });
+      } catch (err) {
+        console.error('Failed to load files:', err);
+        if (!cancelled && !cacheOk) setFiles([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
 
   const handleUploaded = (newFile) => {
-    setFiles(prev => [newFile, ...prev]);
+    setFiles((prev) => {
+      const next = [newFile, ...prev];
+      if (userId) filesByUserId.set(userId, { files: next, ts: Date.now() });
+      return next;
+    });
   };
 
   const handleDeleted = (fileId) => {
-    setFiles(prev => prev.filter(f => f.id !== fileId));
+    setFiles((prev) => {
+      const next = prev.filter((f) => f.id !== fileId);
+      if (userId) filesByUserId.set(userId, { files: next, ts: Date.now() });
+      return next;
+    });
   };
 
   const filtered = filter === 'all' ? files : files.filter(f => f.file_type === filter);
