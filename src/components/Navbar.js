@@ -54,6 +54,7 @@ function getInitials(name) {
 export default function Navbar({ showAuth = true }) {
   const navigate = useNavigate();
   const { session, profile, profileError, loading, logout } = useAuth();
+  const hasValidSession = !!session?.user?.id;
 
   async function handleLogout() {
     try {
@@ -79,7 +80,7 @@ export default function Navbar({ showAuth = true }) {
       </div>
 
       <div style={styles.links}>
-        {session ? (
+        {hasValidSession ? (
           <>
             {loading ? (
               <div style={styles.userBadge} aria-label="Loading profile" title={profileError || undefined}>

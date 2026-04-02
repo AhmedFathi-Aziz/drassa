@@ -40,10 +40,11 @@ export function AuthProvider({ children }) {
     // Get initial session
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
-        setSession(session);
+        const validSession = session?.user?.id ? session : null;
+        setSession(validSession);
         // Session is known now; unblock routing immediately.
         setLoading(false);
-        if (session?.user?.id) fetchProfile(session.user);
+        if (validSession?.user?.id) fetchProfile(validSession.user);
       })
       .catch((err) => {
         console.error('Failed to get session:', err);
@@ -54,15 +55,16 @@ export function AuthProvider({ children }) {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setSession(session);
+        const validSession = session?.user?.id ? session : null;
+        setSession(validSession);
         // Unblock routing immediately on auth event; profile refresh happens in background.
         setLoading(false);
-        if (session?.user?.id) {
+        if (validSession?.user?.id) {
           // Token refresh can happen when tab focus changes; avoid unnecessary profile reloads.
           if (_event === 'TOKEN_REFRESHED' && hasProfileRef.current) {
             return;
           }
-          await fetchProfile(session.user);
+          await fetchProfile(validSession.user);
         }
         else { setProfile(null); setProfileError(''); }
       }

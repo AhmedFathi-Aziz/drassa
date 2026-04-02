@@ -11,6 +11,7 @@ import AdminUserDetail from './pages/AdminUserDetail';
 
 function ProtectedRoute({ children, adminOnly = false }) {
   const { session, profile, loading } = useAuth();
+  const hasValidSession = !!session?.user?.id;
 
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
@@ -22,7 +23,7 @@ function ProtectedRoute({ children, adminOnly = false }) {
     </div>
   );
 
-  if (!session) return <Navigate to="/login" replace />;
+  if (!hasValidSession) return <Navigate to="/login" replace />;
   // During temporary profile fetch issues, avoid hard redirect loops.
   if (adminOnly && profile && profile.role !== 'admin') return <Navigate to="/dashboard" replace />;
   if (!adminOnly && profile?.role === 'admin') return <Navigate to="/admin" replace />;
@@ -32,8 +33,9 @@ function ProtectedRoute({ children, adminOnly = false }) {
 
 function GuestRoute({ children }) {
   const { session, profile, loading } = useAuth();
+  const hasValidSession = !!session?.user?.id;
   if (loading) return null;
-  if (session) {
+  if (hasValidSession) {
     if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;
   }
