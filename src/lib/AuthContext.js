@@ -3,6 +3,20 @@ import { supabase, getProfile, getProfileByEmail } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
+function buildFallbackProfile(user) {
+  if (!user) return null;
+  const meta = user.user_metadata || {};
+  const email = user.email || '';
+  const guessedName = (email.split('@')[0] || 'User').replace(/[._-]+/g, ' ');
+  return {
+    id: user.id,
+    email,
+    username: meta.username || (email.split('@')[0] || 'user'),
+    full_name: meta.full_name || guessedName,
+    role: meta.role || 'user',
+  };
+}
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -32,7 +46,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession()
       .then(({ data: { session } }) => {
         setSession(session);
-        if (session?.user?.id) fetchProfile(session.user.id, session.user.email);
+        if (session?.user?.id) fetchProfile(session.user);
         else setLoading(false);
       })
       .catch((err) => {
@@ -52,7 +66,7 @@ export function AuthProvider({ children }) {
             return;
           }
           setLoading(true);
-          await fetchProfile(session.user.id, session.user.email);
+          await fetchProfile(session.user);
         }
         else { setProfile(null); setProfileError(''); setLoading(false); }
       }
@@ -64,7 +78,9 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  async function fetchProfile(userId, email) {
+  async function fetchProfile(user) {
+    const userId = user?.id;
+    const email = user?.email;
     if (!userId) {
       setProfile(null);
       setProfileError('');
@@ -89,10 +105,11 @@ export function AuthProvider({ children }) {
         }
       }
       setProfile(p);
+      setProfileError('');
     } catch (err) {
       // Preserve existing profile on transient failures (e.g. tab background throttling).
       // Only clear when we never had a profile yet.
-      setProfile(prev => prev || null);
+      setProfile(prev => prev || buildFallbackProfile(user));
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {

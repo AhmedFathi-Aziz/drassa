@@ -23,7 +23,8 @@ function ProtectedRoute({ children, adminOnly = false }) {
   );
 
   if (!session) return <Navigate to="/login" replace />;
-  if (adminOnly && profile?.role !== 'admin') return <Navigate to="/dashboard" replace />;
+  // During temporary profile fetch issues, avoid hard redirect loops.
+  if (adminOnly && profile && profile.role !== 'admin') return <Navigate to="/dashboard" replace />;
   if (!adminOnly && profile?.role === 'admin') return <Navigate to="/admin" replace />;
 
   return children;

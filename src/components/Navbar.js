@@ -99,7 +99,7 @@ export default function Navbar({ showAuth = true }) {
             ) : (
               <div style={styles.userBadge} title={profileError || "Your profile record could not be loaded. This usually means the Supabase SQL setup was not run or failed."}>
                 <div style={styles.avatar}>?</div>
-                <span style={styles.username}>{profileError ? 'Profile unavailable' : 'Signed in'}</span>
+                <span style={styles.username}>Signed in</span>
               </div>
             )}
             <button style={styles.btnGhost} onClick={handleLogout}>Log Out</button>
