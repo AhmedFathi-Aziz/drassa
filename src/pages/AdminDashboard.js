@@ -1,35 +1,24 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getAdminUserFileCounts, getAllProfiles } from '../lib/supabase';
-import { useAuth } from '../lib/AuthContext';
-import Navbar from '../components/Navbar';
+import AdminLayout from '../components/AdminLayout';
 
 function getInitials(name) {
   if (!name) return '?';
-  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2);
 }
-
-const NAV_OFFSET = 144;
 
 /** Show list immediately when returning to this page; refresh in background. */
 let adminListCache = null; // { users, userFileCounts, ts }
 const ADMIN_LIST_CACHE_TTL_MS = 2 * 60 * 1000;
 
-const sidebarStyle = {
-  width: 220,
-  background: '#1e2a36',
-  flexShrink: 0,
-  display: 'flex',
-  flexDirection: 'column',
-  position: 'sticky',
-  top: NAV_OFFSET,
-  alignSelf: 'flex-start',
-  height: `calc(100vh - ${NAV_OFFSET}px)`,
-};
-
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const { logout } = useAuth();
   const [users, setUsers] = useState([]);
   const [userFileCounts, setUserFileCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -80,105 +69,86 @@ export default function AdminDashboard() {
     };
   }, []);
 
-  async function handleLogout() {
-    try {
-      await logout();
-    } catch (err) {
-      console.error('Sign out failed:', err);
-    } finally {
-      window.location.href = '/';
-    }
-  }
-
   const totalFiles = Object.values(userFileCounts).reduce((a, b) => a + b, 0);
 
   return (
-    <div style={{ minHeight: '100vh' }}>
-      <Navbar />
-      <div style={{ display: 'flex', marginTop: NAV_OFFSET, minHeight: `calc(100vh - ${NAV_OFFSET}px)` }}>
-      {/* Sidebar */}
-      <div style={sidebarStyle}>
-        <div style={{ padding: '24px 20px', borderBottom: '1px solid rgba(255,255,255,.1)' }}>
-          <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 2 }}>DRASSA</div>
-          <div style={{ color: 'rgba(255,255,255,.4)', fontSize: 10, textTransform: 'uppercase', letterSpacing: 1 }}>Admin Panel</div>
+    <AdminLayout activeNav="users">
+      <header className="mb-8">
+        <h1 className="font-headline text-2xl font-bold tracking-tight text-primary sm:text-3xl">
+          User management
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm text-secondary">
+          View all registered users and their uploaded files. Select a row to open details.
+        </p>
+      </header>
+
+      {error && (
+        <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-error">
+          {error}
         </div>
-        <nav style={{ flex: 1, paddingTop: 8 }}>
-          <div style={{ padding: '10px 20px', fontSize: 13, color: '#fff', background: '#1a6ab0', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            All Users
-          </div>
-        </nav>
-        <div style={{ padding: 12 }}>
-          <div style={{ padding: '10px 12px', fontSize: 13, color: 'rgba(255,255,255,.6)', display: 'flex', alignItems: 'center', gap: 8, borderRadius: 8, cursor: 'pointer' }}
-            onClick={handleLogout}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,.08)'; e.currentTarget.style.color = '#fff'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'rgba(255,255,255,.6)'; }}
+      )}
+
+      <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        {[
+          { label: 'Total users', value: users.length },
+          { label: 'Total files', value: totalFiles },
+        ].map((s) => (
+          <div
+            key={s.label}
+            className="rounded-2xl border border-outline-variant/40 bg-white px-6 py-5 shadow-sm"
           >
-            <svg width="15" height="15" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            Log Out
+            <div className="text-[11px] font-semibold uppercase tracking-wider text-secondary">
+              {s.label}
+            </div>
+            <div className="mt-2 font-headline text-3xl font-bold text-[#1a6ab0]">{s.value}</div>
           </div>
-        </div>
+        ))}
       </div>
 
-      {/* Main */}
-      <div style={{ flex: 1, padding: 32, background: '#ffffff', overflowY: 'auto' }}>
-        <div style={{ marginBottom: 8 }}>
-          <h2 style={{ fontSize: 22, fontWeight: 700, color: '#343a40' }}>User Management</h2>
-          <p style={{ fontSize: 13, color: '#868e96', marginTop: 4 }}>View all registered users and their uploaded files</p>
-        </div>
-        {error && (
-          <div style={{ marginTop: 12, marginBottom: 14, background: '#fff0f0', border: '1px solid #fcc', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#e24b4a' }}>
-            {error}
-          </div>
-        )}
-
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 16, margin: '24px 0' }}>
-          {[
-            { label: 'Total Users', value: users.length },
-            { label: 'Total Files', value: totalFiles },
-          ].map(s => (
-            <div key={s.label} style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 12, padding: '20px 24px' }}>
-              <div style={{ fontSize: 11, color: '#868e96', textTransform: 'uppercase', letterSpacing: .5, fontWeight: 500, marginBottom: 6 }}>{s.label}</div>
-              <div style={{ fontSize: 28, fontWeight: 700, color: '#1a6ab0' }}>{s.value}</div>
+      <div className="overflow-hidden rounded-2xl border border-outline-variant/40 bg-white shadow-sm">
+        <div className="overflow-x-auto">
+          <div className="min-w-[640px]">
+            <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,88px)_minmax(0,88px)] gap-4 border-b border-outline-variant/50 bg-surface-bright px-6 py-3 text-[11px] font-semibold uppercase tracking-wider text-secondary">
+              <div>User</div>
+              <div>Email</div>
+              <div>Files</div>
+              <div>Action</div>
             </div>
-          ))}
-        </div>
 
-        {/* Table */}
-        <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 14, overflow: 'hidden' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr', padding: '12px 20px', background: '#ffffff', borderBottom: '1px solid #e9ecef', fontSize: 11, fontWeight: 600, color: '#868e96', textTransform: 'uppercase', letterSpacing: .5 }}>
-            <div>User</div><div>Email</div><div>Files</div><div>Action</div>
-          </div>
-
-          {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#adb5bd', fontSize: 13 }}>Loading users...</div>
-          ) : users.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: '#adb5bd', fontSize: 13 }}>No users registered yet.</div>
-          ) : users.map(u => (
-            <div key={u.id}
-              style={{ display: 'grid', gridTemplateColumns: '2fr 2fr 1fr 1fr', padding: '14px 20px', borderBottom: '1px solid #f1f3f5', alignItems: 'center', cursor: 'pointer', transition: 'background .15s' }}
-              onClick={() => navigate(`/admin/user/${u.id}`)}
-              onMouseEnter={e => e.currentTarget.style.background = '#e8f2fb'}
-              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 32, height: 32, background: '#1a6ab0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 11, fontWeight: 600, flexShrink: 0 }}>
-                  {getInitials(u.full_name)}
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#343a40' }}>{u.full_name}</div>
-                  <div style={{ fontSize: 11, color: '#adb5bd' }}>@{u.username}</div>
-                </div>
+            {loading ? (
+              <div className="px-6 py-14 text-center text-sm text-secondary">Loading users…</div>
+            ) : users.length === 0 ? (
+              <div className="px-6 py-14 text-center text-sm text-secondary">
+                No users registered yet.
               </div>
-              <div style={{ fontSize: 13, color: '#495057' }}>{u.email}</div>
-              <div style={{ fontSize: 13, color: '#495057' }}>{userFileCounts[u.id] ?? '…'}</div>
-              <div style={{ fontSize: 12, color: '#1a6ab0', fontWeight: 600 }}>View →</div>
-            </div>
-          ))}
+            ) : (
+              users.map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  className="grid w-full grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,88px)_minmax(0,88px)] items-center gap-4 border-b border-outline-variant/30 px-6 py-3.5 text-left transition-colors last:border-b-0 hover:bg-primary-fixed/40"
+                  onClick={() => navigate(`/admin/user/${u.id}`)}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#1a6ab0] text-[11px] font-bold text-white">
+                      {getInitials(u.full_name)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-medium text-on-background">{u.full_name}</div>
+                      <div className="truncate text-xs text-secondary">@{u.username}</div>
+                    </div>
+                  </div>
+                  <div className="truncate text-sm text-on-surface-variant">{u.email}</div>
+                  <div className="text-sm tabular-nums text-on-surface-variant">
+                    {userFileCounts[u.id] ?? '—'}
+                  </div>
+                  <div className="text-sm font-semibold text-[#1a6ab0]">View →</div>
+                </button>
+              ))
+            )}
+          </div>
         </div>
       </div>
-      </div>
-    </div>
+    </AdminLayout>
   );
 }
