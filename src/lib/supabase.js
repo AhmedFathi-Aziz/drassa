@@ -176,6 +176,15 @@ export async function getAdminUserProfile(userId) {
   return getProfile(userId);
 }
 
+async function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms)
+    ),
+  ]);
+}
+
 export async function uploadFile(file, userId) {
   const storagePath = `${userId}/${Date.now()}_${file.name}`;
 
@@ -185,9 +194,13 @@ export async function uploadFile(file, userId) {
   else if (file.type.startsWith('video/')) fileType = 'video';
 
   // Upload to Supabase Storage
-  const { error: uploadError } = await supabase.storage
-    .from('user-files')
-    .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+  const { error: uploadError } = await withTimeout(
+    supabase.storage
+      .from('user-files')
+      .upload(storagePath, file, { cacheControl: '3600', upsert: false }),
+    30000,
+    'Storage upload'
+  );
 
   if (uploadError) {
     const msg = uploadError?.message || String(uploadError);
@@ -200,15 +213,23 @@ export async function uploadFile(file, userId) {
     .getPublicUrl(storagePath);
 
   // Insert metadata into the files table
-  const { data, error: dbError } = await supabase.from('files').insert({
-    user_id: userId,
-    name: file.name,
-    file_type: fileType,
-    mime_type: file.type,
-    size_bytes: file.size,
-    storage_path: storagePath,
-    public_url: urlData.publicUrl,
-  }).select().single();
+  const { data, error: dbError } = await withTimeout(
+    supabase
+      .from('files')
+      .insert({
+        user_id: userId,
+        name: file.name,
+        file_type: fileType,
+        mime_type: file.type,
+        size_bytes: file.size,
+        storage_path: storagePath,
+        public_url: urlData.publicUrl,
+      })
+      .select()
+      .single(),
+    30000,
+    'DB insert'
+  );
 
   if (dbError) {
     const msg = dbError?.message || String(dbError);
