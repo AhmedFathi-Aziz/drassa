@@ -1,29 +1,52 @@
 /**
  * Vercel Serverless Function — creates Auth users with service role (never exposed to the browser).
- * Set in Vercel Project → Settings → Environment Variables:
- *   SUPABASE_URL (or reuse REACT_APP_SUPABASE_URL)
- *   SUPABASE_SERVICE_ROLE_KEY  (Dashboard → Settings → API → service_role — server only!)
- *   SUPABASE_ANON_KEY (optional; same as REACT_APP_SUPABASE_ANON_KEY if you prefer one name)
+ * Set in Vercel: SUPABASE_SERVICE_ROLE_KEY (+ URL via REACT_APP_SUPABASE_URL or SUPABASE_URL).
  */
 const { createClient } = require('@supabase/supabase-js');
 
+/**
+ * Vercel may pre-parse JSON into req.body; raw streams may never emit `end` if mishandled — avoid hanging forever.
+ */
 function readJsonBody(req) {
-  if (req.body && typeof req.body === 'object' && !Buffer.isBuffer(req.body)) {
-    return Promise.resolve(req.body);
+  const b = req.body;
+  if (b != null && typeof b === 'object' && !Buffer.isBuffer(b)) {
+    return Promise.resolve(b);
   }
+  if (typeof b === 'string') {
+    try {
+      return Promise.resolve(b ? JSON.parse(b) : {});
+    } catch {
+      return Promise.resolve({});
+    }
+  }
+  if (Buffer.isBuffer(b)) {
+    try {
+      const s = b.toString('utf8');
+      return Promise.resolve(s ? JSON.parse(s) : {});
+    } catch {
+      return Promise.resolve({});
+    }
+  }
+
   return new Promise((resolve, reject) => {
-    let raw = '';
-    req.on('data', (chunk) => {
-      raw += chunk;
-    });
+    const chunks = [];
+    const t = setTimeout(() => {
+      reject(new Error('Request body read timed out'));
+    }, 15000);
+    req.on('data', (chunk) => chunks.push(chunk));
     req.on('end', () => {
+      clearTimeout(t);
       try {
+        const raw = Buffer.concat(chunks).toString('utf8');
         resolve(raw ? JSON.parse(raw) : {});
       } catch (e) {
         reject(e);
       }
     });
-    req.on('error', reject);
+    req.on('error', (e) => {
+      clearTimeout(t);
+      reject(e);
+    });
   });
 }
 
@@ -48,9 +71,11 @@ module.exports = async (req, res) => {
     if (!supabaseUrl || !serviceKey) {
       return res.status(500).json({
         error:
-          'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Add them in Vercel → Environment Variables (not REACT_APP_* for the service role).',
+          'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Add them in Vercel → Environment Variables.',
       });
     }
+
+    const body = await readJsonBody(req);
 
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
@@ -80,7 +105,6 @@ module.exports = async (req, res) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    const body = await readJsonBody(req);
     const email = String(body.email ?? '')
       .trim()
       .toLowerCase();

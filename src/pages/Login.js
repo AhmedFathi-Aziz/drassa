@@ -22,11 +22,8 @@ export default function Login() {
     setLoading(true);
     try {
       setStatus('Signing in…');
-      await Promise.race([
-        signIn({ email, password }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Sign in timed out. Close other tabs of this app and try again.')), 8000)),
-      ]);
-      // Navigate immediately so user sees progress; ProtectedRoute will handle role redirects.
+      await signIn({ email, password });
+      // ProtectedRoute sends admins to /admin and regular users to /dashboard.
       navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err?.message || 'Sign in failed. Please try again.');

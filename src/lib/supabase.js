@@ -98,6 +98,10 @@ export async function adminCreateUser(payload) {
     typeof window !== 'undefined' &&
     (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
 
+  const controller = new AbortController();
+  const timeoutMs = 45000;
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
   try {
     const res = await fetch(`${origin}/api/create-user`, {
       method: 'POST',
@@ -106,6 +110,7 @@ export async function adminCreateUser(payload) {
         Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
 
     const text = await res.text();
@@ -129,10 +134,17 @@ export async function adminCreateUser(payload) {
 
     throw new Error(json.error || `Request failed (${res.status})`);
   } catch (e) {
+    if (e?.name === 'AbortError') {
+      throw new Error(
+        `Request timed out after ${timeoutMs / 1000}s. Check Vercel logs, SUPABASE_SERVICE_ROLE_KEY, and redeploy with api/create-user.js.`
+      );
+    }
     if (isLocalhost && e && (/failed to fetch|networkerror|load failed/i.test(String(e.message)) || e.name === 'TypeError')) {
       return invokeEdgeFunctionCreateUser(body);
     }
     throw e;
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
