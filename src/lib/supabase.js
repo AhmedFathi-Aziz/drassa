@@ -12,7 +12,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     autoRefreshToken: true,
     detectSessionInUrl: true,
-    flowType: 'implicit',
+    // PKCE is the recommended browser flow; implicit + refresh was prone to stuck session recovery.
+    flowType: 'pkce',
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
   },
 });

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './lib/AuthContext';
 
@@ -17,16 +17,29 @@ import AdminTrainingReports from './pages/AdminTrainingReports';
 import ResetPassword from './pages/ResetPassword';
 import AuthLoadingScreen from './components/AuthLoadingScreen';
 
+const AUTH_STUCK_MS = 22_000;
+
 function ProtectedRoute({ children, adminOnly = false }) {
   const { session, profile, loading, profileLoading } = useAuth();
   const hasValidSession = !!session?.user?.id;
+  const [stuckBypass, setStuckBypass] = useState(false);
 
-  if (loading) return <AuthLoadingScreen />;
+  useEffect(() => {
+    const blocked =
+      loading || (hasValidSession && profileLoading && profile == null);
+    if (!blocked) {
+      setStuckBypass(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setStuckBypass(true), AUTH_STUCK_MS);
+    return () => clearTimeout(t);
+  }, [loading, hasValidSession, profileLoading, profile]);
+
+  if (loading && !stuckBypass) return <AuthLoadingScreen />;
 
   if (!hasValidSession) return <Navigate to="/login" replace />;
 
-  // Block only until we have a profile row (or fallback). Background refetch keeps profileLoading false.
-  if (profileLoading && !profile) return <AuthLoadingScreen />;
+  if (profileLoading && !profile && !stuckBypass) return <AuthLoadingScreen />;
 
   if (adminOnly && profile && profile.role !== 'admin') return <Navigate to="/dashboard" replace />;
   if (!adminOnly && profile?.role === 'admin') return <Navigate to="/admin" replace />;
@@ -37,8 +50,21 @@ function ProtectedRoute({ children, adminOnly = false }) {
 function GuestRoute({ children }) {
   const { session, profile, loading, profileLoading } = useAuth();
   const hasValidSession = !!session?.user?.id;
-  if (loading) return <AuthLoadingScreen />;
-  if (hasValidSession && profileLoading && !profile) return <AuthLoadingScreen />;
+  const [stuckBypass, setStuckBypass] = useState(false);
+
+  useEffect(() => {
+    const blocked =
+      loading || (hasValidSession && profileLoading && profile == null);
+    if (!blocked) {
+      setStuckBypass(false);
+      return undefined;
+    }
+    const t = setTimeout(() => setStuckBypass(true), AUTH_STUCK_MS);
+    return () => clearTimeout(t);
+  }, [loading, hasValidSession, profileLoading, profile]);
+
+  if (loading && !stuckBypass) return <AuthLoadingScreen />;
+  if (hasValidSession && profileLoading && !profile && !stuckBypass) return <AuthLoadingScreen />;
   if (hasValidSession) {
     if (profile?.role === 'admin') return <Navigate to="/admin" replace />;
     return <Navigate to="/dashboard" replace />;

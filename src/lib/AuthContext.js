@@ -4,7 +4,7 @@ import { signOutSafe, supabase, getProfile, getProfileByEmail } from '../lib/sup
 const AuthContext = createContext(null);
 
 const PROFILE_FETCH_TIMEOUT_MS = 14_000;
-const GET_SESSION_TIMEOUT_MS = 12_000;
+const GET_SESSION_TIMEOUT_MS = 15_000;
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
@@ -38,7 +38,6 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   const profileRef = useRef(null);
-  /** Same-uid profile fetch in flight — avoids duplicate parallel loads freezing UI state. */
   const profileFetchPromisesRef = useRef(new Map());
 
   useEffect(() => {
@@ -111,35 +110,62 @@ export function AuthProvider({ children }) {
   );
 
   useEffect(() => {
-    let active = true;
+    let cancelled = false;
 
-    withTimeout(supabase.auth.getSession(), GET_SESSION_TIMEOUT_MS, 'getSession')
-      .then(({ data: { session: s } }) => {
+    async function boot() {
+      try {
+        const { data, error } = await withTimeout(
+          supabase.auth.getSession(),
+          GET_SESSION_TIMEOUT_MS,
+          'getSession'
+        );
+        // Always unblock the router — even if this effect was superseded (Strict Mode), a later boot runs too.
         setLoading(false);
-        if (!active) return;
-        const validSession = s?.user?.id ? s : null;
+
+        if (cancelled) return;
+
+        const sessionRow = data?.session;
+        const validSession = sessionRow?.user?.id && !error ? sessionRow : null;
         setSession(validSession);
-        // Do not touch profileLoading here — it races with onAuthStateChange + fetchProfile and can
-        // flip back to true after fetch completes, leaving routes stuck on the loading screen.
-      })
-      .catch((err) => {
-        console.error('Failed to get session:', err);
+
+        if (validSession?.user) {
+          await fetchProfile(validSession.user);
+        } else {
+          setProfile(null);
+          setProfileError('');
+          setProfileLoading(false);
+        }
+      } catch (err) {
+        console.error('Auth boot failed:', err);
         setLoading(false);
-        if (!active) return;
-        setProfileError(err?.message || 'Failed to get session');
-      });
+        if (!cancelled) {
+          setSession(null);
+          setProfile(null);
+          setProfileError(err?.message || 'Session could not be restored');
+          setProfileLoading(false);
+        }
+      }
+    }
+
+    boot();
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const validSession = session?.user?.id ? session : null;
+    } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       setLoading(false);
-      if (!active) return;
 
-      setSession(validSession);
+      // First paint + refresh: handled exclusively by boot() so Strict Mode / listener order cannot skip profile load.
+      if (event === 'INITIAL_SESSION') {
+        return;
+      }
 
-      if (validSession?.user?.id) {
-        await fetchProfile(validSession.user);
+      if (cancelled) return;
+
+      const valid = newSession?.user?.id ? newSession : null;
+      setSession(valid);
+
+      if (valid?.user) {
+        await fetchProfile(valid.user);
       } else {
         setProfile(null);
         setProfileError('');
@@ -149,16 +175,10 @@ export function AuthProvider({ children }) {
     });
 
     return () => {
-      active = false;
+      cancelled = true;
       subscription.unsubscribe();
     };
   }, [fetchProfile]);
-
-  // If we have a session but never got a profile row and nothing is loading, recover (e.g. missed INITIAL_SESSION).
-  useEffect(() => {
-    if (!session?.user?.id || profile != null || profileLoading) return;
-    fetchProfile(session.user);
-  }, [session, profile, profileLoading, fetchProfile]);
 
   async function logout() {
     setSession(null);
