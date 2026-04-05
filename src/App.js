@@ -5,9 +5,15 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import UserDashboard from './pages/UserDashboard';
+import UserTraining from './pages/UserTraining';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminAddUser from './pages/AdminAddUser';
 import AdminUserDetail from './pages/AdminUserDetail';
+import AdminInServiceList from './pages/AdminInServiceList';
+import AdminInServiceNew from './pages/AdminInServiceNew';
+import AdminInServiceDetail from './pages/AdminInServiceDetail';
+import AdminLessonPlans from './pages/AdminLessonPlans';
+import AdminTrainingReports from './pages/AdminTrainingReports';
 import ResetPassword from './pages/ResetPassword';
 import AuthLoadingScreen from './components/AuthLoadingScreen';
 
@@ -50,9 +56,15 @@ export default function App() {
           <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
+          <Route path="/dashboard/training" element={<ProtectedRoute><UserTraining /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/add-user" element={<ProtectedRoute adminOnly><AdminAddUser /></ProtectedRoute>} />
           <Route path="/admin/user/:userId" element={<ProtectedRoute adminOnly><AdminUserDetail /></ProtectedRoute>} />
+          <Route path="/admin/in-service" element={<ProtectedRoute adminOnly><AdminInServiceList /></ProtectedRoute>} />
+          <Route path="/admin/in-service/new" element={<ProtectedRoute adminOnly><AdminInServiceNew /></ProtectedRoute>} />
+          <Route path="/admin/in-service/:sessionId" element={<ProtectedRoute adminOnly><AdminInServiceDetail /></ProtectedRoute>} />
+          <Route path="/admin/lesson-plans" element={<ProtectedRoute adminOnly><AdminLessonPlans /></ProtectedRoute>} />
+          <Route path="/admin/reports" element={<ProtectedRoute adminOnly><AdminTrainingReports /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

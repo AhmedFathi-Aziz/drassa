@@ -30,9 +30,30 @@ const LogoutIcon = () => (
   </svg>
 );
 
+const TrainingIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path d="M4 19.5A2.5 2.5 0 016.5 17H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M12 7v6M9 10h6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const DocumentIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const ChartIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 /**
  * Admin shell: sidebar stays fixed while only the main column scrolls.
- * @param {'list' | 'add' | 'detail'} activeNav
+ * @param {'list' | 'add' | 'detail' | 'in-service' | 'lesson-plans' | 'reports'} activeNav
  */
 export default function AdminLayout({ children, activeNav = 'list' }) {
   const navigate = useNavigate();
@@ -94,6 +115,34 @@ export default function AdminLayout({ children, activeNav = 'list' }) {
                 User detail
               </div>
             )}
+
+            <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              In-service
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/in-service')}
+              className={`${navBtn} ${activeNav === 'in-service' ? navActive : navIdle}`}
+            >
+              <TrainingIcon />
+              Training sessions
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/lesson-plans')}
+              className={`${navBtn} ${activeNav === 'lesson-plans' ? navActive : navIdle}`}
+            >
+              <DocumentIcon />
+              Lesson plans
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/reports')}
+              className={`${navBtn} ${activeNav === 'reports' ? navActive : navIdle}`}
+            >
+              <ChartIcon />
+              Reports
+            </button>
           </nav>
 
           <div className="border-t border-white/10 p-3">

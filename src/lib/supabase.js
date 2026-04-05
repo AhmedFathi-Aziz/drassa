@@ -341,3 +341,146 @@ export async function deleteFile(fileId, storagePath) {
   const { error } = await supabase.from('files').delete().eq('id', fileId);
   if (error) throw error;
 }
+
+// ---- In-service training (sessions, lesson plans, attendance) ----
+
+export async function listInServiceSessions() {
+  const { data, error } = await supabase
+    .from('in_service_sessions')
+    .select('*')
+    .order('session_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function getInServiceSession(id) {
+  const { data, error } = await supabase.from('in_service_sessions').select('*').eq('id', id).maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * @param {{ title: string, description?: string|null, session_at: string, location?: string|null, duration_minutes?: number|null }} payload
+ */
+export async function createInServiceSession(payload) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  let durationMinutes = null;
+  if (payload.duration_minutes != null && payload.duration_minutes !== '') {
+    const n = Number(payload.duration_minutes);
+    if (Number.isFinite(n)) durationMinutes = n;
+  }
+
+  const { data, error } = await supabase
+    .from('in_service_sessions')
+    .insert({
+      title: payload.title.trim(),
+      description: payload.description?.trim() || null,
+      session_at: payload.session_at,
+      location: payload.location?.trim() || null,
+      duration_minutes: durationMinutes,
+      created_by: uid,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteInServiceSession(id) {
+  const { error } = await supabase.from('in_service_sessions').delete().eq('id', id);
+  if (error) throw error;
+}
+
+export async function listLessonPlans() {
+  const { data, error } = await supabase
+    .from('lesson_plans')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * @param {File} file
+ * @param {{ title: string, description?: string|null }} meta
+ */
+export async function uploadLessonPlan(file, meta) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const uid = session?.user?.id;
+  if (!uid) throw new Error('You must be signed in.');
+
+  const safeName = file.name.replace(/[^\w.-]+/g, '_');
+  const storagePath = `${uid}/${Date.now()}_${safeName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('lesson-plans')
+    .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+
+  if (uploadError) throw new Error(uploadError.message || 'Upload failed');
+
+  const { data: urlData } = supabase.storage.from('lesson-plans').getPublicUrl(storagePath);
+
+  const { data, error } = await supabase
+    .from('lesson_plans')
+    .insert({
+      title: meta.title.trim(),
+      description: meta.description?.trim() || null,
+      storage_path: storagePath,
+      public_url: urlData.publicUrl,
+      file_name: file.name,
+      mime_type: file.type || 'application/octet-stream',
+      size_bytes: file.size,
+      uploaded_by: uid,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteLessonPlan(row) {
+  if (row?.storage_path) {
+    await supabase.storage.from('lesson-plans').remove([row.storage_path]);
+  }
+  const { error } = await supabase.from('lesson_plans').delete().eq('id', row.id);
+  if (error) throw error;
+}
+
+export async function listAttendanceForSession(sessionId) {
+  const { data, error } = await supabase
+    .from('in_service_attendance')
+    .select('*')
+    .eq('session_id', sessionId);
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * @param {string} sessionId
+ * @param {{ user_id: string, attended: boolean, notes?: string|null }[]} rows
+ */
+export async function saveSessionAttendance(sessionId, rows) {
+  const payload = rows.map((r) => ({
+    session_id: sessionId,
+    user_id: r.user_id,
+    attended: !!r.attended,
+    notes: r.notes?.trim() || null,
+  }));
+  const { error } = await supabase.from('in_service_attendance').upsert(payload, {
+    onConflict: 'session_id,user_id',
+  });
+  if (error) throw error;
+}
+
+/** Admin-only RLS: full attendance export for reports. */
+export async function listAllInServiceAttendance() {
+  const { data, error } = await supabase.from('in_service_attendance').select('*');
+  if (error) throw error;
+  return data || [];
+}

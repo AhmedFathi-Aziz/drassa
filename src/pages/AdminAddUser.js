@@ -5,8 +5,8 @@ import { adminCreateUser, USER_CATEGORIES } from '../lib/supabase';
 import { invalidateAdminListCache } from '../lib/adminListCache';
 
 const LABELS = {
-  [USER_CATEGORIES.lifeguard]: 'Lifeguard (منقذ)',
-  [USER_CATEGORIES.instructor]: 'Instructor (مدرب)',
+  [USER_CATEGORIES.lifeguard]: 'Lifeguard',
+  [USER_CATEGORIES.instructor]: 'Instructor',
 };
 
 export default function AdminAddUser() {

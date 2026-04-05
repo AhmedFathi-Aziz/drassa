@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { getUserFiles } from '../lib/supabase';
 import Navbar from '../components/Navbar';
@@ -92,7 +93,23 @@ export default function UserDashboard() {
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#343a40', marginBottom: 2 }}>Good day, {firstName} 👋</h2>
           <p style={{ fontSize: 13, color: '#868e96' }}>Manage and upload your files securely</p>
         </div>
-        <div style={{ fontSize: 12, color: '#adb5bd' }}>@{profile?.username}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+          <Link
+            to="/dashboard/training"
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1a6ab0',
+              textDecoration: 'none',
+              padding: '8px 14px',
+              borderRadius: 10,
+              border: '1px solid #1a6ab0',
+            }}
+          >
+            In-service training
+          </Link>
+          <span style={{ fontSize: 12, color: '#adb5bd' }}>@{profile?.username}</span>
+        </div>
       </div>
 
       <div style={{ padding: 32, flex: 1, maxWidth: 1200, width: '100%', margin: '0 auto' }}>

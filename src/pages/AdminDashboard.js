@@ -17,8 +17,8 @@ function getInitials(name) {
 const ADMIN_LIST_CACHE_TTL_MS = 2 * 60 * 1000;
 
 function categoryLabel(cat) {
-  if (cat === 'instructor') return 'Instructor (مدرب)';
-  return 'Lifeguard (منقذ)';
+  if (cat === 'instructor') return 'Instructor';
+  return 'Lifeguard';
 }
 
 export default function AdminDashboard() {
