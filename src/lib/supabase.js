@@ -42,46 +42,98 @@ export function clearLocalAuthStorage() {
 }
 
 // ---- Auth helpers ----
-// Public self-signup is disabled; admins create users via Edge Function `create-user`.
+// Public self-signup is disabled. Admins create users via:
+// - Production (Vercel): POST /api/create-user (serverless, uses SUPABASE_SERVICE_ROLE_KEY on server only)
+// - Optional: Supabase Edge Function `create-user` (e.g. local dev without Vercel API)
 
 export const USER_CATEGORIES = {
   lifeguard: 'lifeguard',
   instructor: 'instructor',
 };
 
-/**
- * Admin-only: creates auth user + profile (via trigger). Requires deployed `create-user` Edge Function.
- * @param {{ email: string, password: string, username: string, full_name: string, user_category?: 'lifeguard'|'instructor' }} payload
- */
 function explainEdgeFunctionFailure(message) {
   const base = message || 'Edge Function request failed';
   if (/failed to send|fetch|network|edge function/i.test(base)) {
     return `${base}
 
-لازم تنشر دالة create-user على مشروع Supabase (مرة واحدة):
-1) ثبّت Supabase CLI وادخل: supabase login && supabase link
-2) من مجلد المشروع: supabase functions deploy create-user
+(على Vercel) تأكد إن ملف api/create-user.js موجود في المشروع وأضفت في Vercel → Environment Variables:
+SUPABASE_SERVICE_ROLE_KEY و SUPABASE_URL (أو REACT_APP_SUPABASE_URL)
 
-بعد النشر، جرّب إضافة المستخدم تاني من localhost — الطلب بيروح لنفس مشروعك على السحابة.`;
+(بدون Vercel) انشر Edge Function: supabase functions deploy create-user`;
   }
   return base;
 }
 
-export async function adminCreateUser(payload) {
-  const { data, error } = await supabase.functions.invoke('create-user', {
-    body: {
-      email: payload.email,
-      password: payload.password,
-      username: payload.username,
-      full_name: payload.full_name,
-      user_category: payload.user_category ?? USER_CATEGORIES.lifeguard,
-    },
-  });
+async function invokeEdgeFunctionCreateUser(body) {
+  const { data, error } = await supabase.functions.invoke('create-user', { body });
   if (error) {
     throw new Error(explainEdgeFunctionFailure(error.message));
   }
   if (data?.error) throw new Error(data.error);
   return data;
+}
+
+/**
+ * Admin-only: creates auth user + profile (via DB trigger on auth.users).
+ * @param {{ email: string, password: string, username: string, full_name: string, user_category?: 'lifeguard'|'instructor' }} payload
+ */
+export async function adminCreateUser(payload) {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  if (!session?.access_token) {
+    throw new Error('You must be signed in as admin.');
+  }
+
+  const body = {
+    email: payload.email,
+    password: payload.password,
+    username: payload.username,
+    full_name: payload.full_name,
+    user_category: payload.user_category ?? USER_CATEGORIES.lifeguard,
+  };
+
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  const isLocalhost =
+    typeof window !== 'undefined' &&
+    (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+
+  try {
+    const res = await fetch(`${origin}/api/create-user`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify(body),
+    });
+
+    const text = await res.text();
+    let json = {};
+    try {
+      json = text ? JSON.parse(text) : {};
+    } catch {
+      if (!res.ok) {
+        throw new Error(text?.slice(0, 200) || `Server error (${res.status})`);
+      }
+    }
+
+    if (res.ok) {
+      if (json.error) throw new Error(json.error);
+      return json;
+    }
+
+    if (res.status === 404 && isLocalhost) {
+      return invokeEdgeFunctionCreateUser(body);
+    }
+
+    throw new Error(json.error || `Request failed (${res.status})`);
+  } catch (e) {
+    if (isLocalhost && e && (/failed to fetch|networkerror|load failed/i.test(String(e.message)) || e.name === 'TypeError')) {
+      return invokeEdgeFunctionCreateUser(body);
+    }
+    throw e;
+  }
 }
 
 /** Admin-only: update lifeguard / instructor classification (RLS: admin policy). */

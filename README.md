@@ -20,6 +20,8 @@ A full-stack web portal for DRASSA – Emrill with user authentication, file upl
 
 ```
 drassa-portal/
+├── api/
+│   └── create-user.js      # Vercel serverless: admin creates users (service role on server)
 ├── public/
 │   └── index.html
 ├── src/
@@ -116,7 +118,7 @@ The `handle_new_user` trigger creates the `profiles` row. Then promote to admin 
 UPDATE public.profiles SET role = 'admin' WHERE username = 'admin';
 ```
 
-Log in at `/login`. Further staff accounts are created from **Admin → Add user** after you deploy the `create-user` Edge Function (see `supabase/functions/create-user`).
+Log in at `/login`. Further staff accounts are created from **Admin → Add user**. On **Vercel**, add `SUPABASE_SERVICE_ROLE_KEY` (see Deploy section). Optionally you can use a Supabase Edge Function instead (`supabase/functions/create-user`).
 
 ---
 
@@ -130,7 +132,10 @@ Log in at `/login`. Further staff accounts are created from **Admin → Add user
 4. In the **Environment Variables** section, add:
    - `REACT_APP_SUPABASE_URL` → your Supabase URL
    - `REACT_APP_SUPABASE_ANON_KEY` → your Supabase anon key
+   - `SUPABASE_SERVICE_ROLE_KEY` → **service_role** key from Supabase → Settings → API (used only by `api/create-user.js` on the server — never exposed to the browser). Required for **Admin → Add user** on the deployed site.
 5. Click **Deploy** — done! Vercel gives you a live URL instantly.
+
+After each env change, **Redeploy** so serverless functions pick up new variables.
 
 ### Option B — Deploy via Vercel CLI
 
@@ -197,8 +202,10 @@ vercel
 | Problem | Solution |
 |---|---|
 | "Missing Supabase environment variables" | Make sure `.env` file exists and has both keys |
-| Public signup removed | Only admins create users (Admin → Add user); deploy the `create-user` Edge Function |
-| “Add user” fails / function error | Run `supabase functions deploy create-user` and apply migration `user_category` SQL |
+| Public signup removed | Only admins create users via **Admin → Add user** |
+| “Add user” on Vercel fails | Add `SUPABASE_SERVICE_ROLE_KEY` in Vercel env and redeploy; ensure `api/create-user.js` is in the repo |
+| “Add user” on localhost only | Either run `vercel dev` (serves `/api`) or deploy Supabase Edge Function `create-user` |
+| Edge Function / fetch errors | Apply SQL migration for `user_category`; optional: `supabase functions deploy create-user` |
 | Profile missing `user_category` column | Run `supabase/migrations/20260205120000_user_category_admin_policies.sql` in SQL Editor |
 | Files upload but don't appear | Check the `files` table RLS policy in Supabase |
 | Admin panel not showing | Run the SQL `UPDATE profiles SET role = 'admin'` command |
