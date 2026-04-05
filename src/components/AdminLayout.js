@@ -63,9 +63,15 @@ const ShieldIcon = () => (
   </svg>
 );
 
+const HistoryIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 /**
  * Admin shell: sidebar stays fixed while only the main column scrolls.
- * @param {'list' | 'add' | 'detail' | 'in-service' | 'lesson-plans' | 'reports' | 'safety'} activeNav
+ * @param {'list' | 'add' | 'detail' | 'in-service' | 'lesson-plans' | 'reports' | 'audit' | 'safety'} activeNav
  */
 export default function AdminLayout({ children, activeNav = 'list' }) {
   const navigate = useNavigate();
@@ -73,11 +79,12 @@ export default function AdminLayout({ children, activeNav = 'list' }) {
 
   async function handleLogout() {
     try {
+      // Redirect immediately for faster UX
+      navigate('/login', { replace: true });
+      // Logout in the background
       await logout();
     } catch (err) {
       console.error('Sign out failed:', err);
-    } finally {
-      window.location.href = '/';
     }
   }
 
@@ -88,103 +95,118 @@ export default function AdminLayout({ children, activeNav = 'list' }) {
 
   return (
     <div className="min-h-screen bg-[#eef2f6] font-body text-on-surface">
-      <Navbar />
-      <div
-        className="flex overflow-hidden"
-        style={{
-          marginTop: ADMIN_NAV_OFFSET,
-          height: `calc(100vh - ${ADMIN_NAV_OFFSET}px)`,
-        }}
-      >
-        <aside className="flex w-[240px] shrink-0 flex-col border-r border-slate-800/80 bg-[#0d131c] shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)]">
-          <div className="border-b border-white/10 px-5 py-5">
-            <p className="font-headline text-base font-bold tracking-tight text-white">DRASSA</p>
-            <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+      
+      {/* Fixed sidebar */}
+      <aside className="fixed left-0 w-[240px] flex flex-col border-r border-slate-800/80 bg-[#0d131c] shadow-[inset_-1px_0_0_rgba(255,255,255,0.04)] h-screen">
+        <div className="border-b border-white/10 px-5 py-5 shrink-0 flex items-center gap-3">
+          <div className="h-[40px] w-[40px] rounded bg-white flex items-center justify-center shrink-0">
+            <img
+              alt="DRASSA logo"
+              className="h-[36px] w-auto object-contain"
+              src="/drassa-logo.png"
+            />
+          </div>
+          <div>
+            <p className="font-headline text-sm font-bold tracking-tight text-white">DRASSA</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-500">
               Admin
             </p>
           </div>
+        </div>
 
-          <nav className="flex flex-1 flex-col gap-1 px-3 pt-4">
-            <button
-              type="button"
-              onClick={() => navigate('/admin')}
-              className={`${navBtn} ${activeNav === 'list' ? navActive : navIdle}`}
-            >
-              <UsersIcon />
-              User list
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/add-user')}
-              className={`${navBtn} ${activeNav === 'add' ? navActive : navIdle}`}
-            >
-              <AddIcon />
-              Add user
-            </button>
-            {activeNav === 'detail' && (
-              <div className={`${navBtn} ${navActive} cursor-default`}>
-                <PersonIcon />
-                User detail
-              </div>
-            )}
+        <nav className="flex-1 flex flex-col gap-1 px-3 pt-4 overflow-y-auto overscroll-contain min-h-0">
+          <button
+            type="button"
+            onClick={() => navigate('/admin')}
+            className={`${navBtn} ${activeNav === 'list' ? navActive : navIdle}`}
+          >
+            <UsersIcon />
+            User list
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/add-user')}
+            className={`${navBtn} ${activeNav === 'add' ? navActive : navIdle}`}
+          >
+            <AddIcon />
+            Add user
+          </button>
+          {activeNav === 'detail' && (
+            <div className={`${navBtn} ${navActive} cursor-default`}>
+              <PersonIcon />
+              User detail
+            </div>
+          )}
 
-            <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              In-service
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/in-service')}
-              className={`${navBtn} ${activeNav === 'in-service' ? navActive : navIdle}`}
-            >
-              <TrainingIcon />
-              Training sessions
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/lesson-plans')}
-              className={`${navBtn} ${activeNav === 'lesson-plans' ? navActive : navIdle}`}
-            >
-              <DocumentIcon />
-              Lesson plans
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/reports')}
-              className={`${navBtn} ${activeNav === 'reports' ? navActive : navIdle}`}
-            >
-              <ChartIcon />
-              Reports
-            </button>
+          <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            In-service
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/in-service')}
+            className={`${navBtn} ${activeNav === 'in-service' ? navActive : navIdle}`}
+          >
+            <TrainingIcon />
+            Training sessions
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/lesson-plans')}
+            className={`${navBtn} ${activeNav === 'lesson-plans' ? navActive : navIdle}`}
+          >
+            <DocumentIcon />
+            Lesson plans
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/reports')}
+            className={`${navBtn} ${activeNav === 'reports' ? navActive : navIdle}`}
+          >
+            <ChartIcon />
+            Reports
+          </button>
 
-            <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
-              Safety
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate('/admin/safety')}
-              className={`${navBtn} ${activeNav === 'safety' ? navActive : navIdle}`}
-            >
-              <ShieldIcon />
-              Safety events
-            </button>
-          </nav>
+          <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Compliance & Audit
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/audit')}
+            className={`${navBtn} ${activeNav === 'audit' ? navActive : navIdle}`}
+          >
+            <HistoryIcon />
+            Audit logs
+          </button>
 
-          <div className="border-t border-white/10 p-3">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
-            >
-              <LogoutIcon />
-              Log out
-            </button>
-          </div>
-        </aside>
+          <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+            Safety
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate('/admin/safety')}
+            className={`${navBtn} ${activeNav === 'safety' ? navActive : navIdle}`}
+          >
+            <ShieldIcon />
+            Safety events
+          </button>
+        </nav>
 
-        <main className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain bg-[#eef2f6]">
-          <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
-        </main>
-      </div>
+        <div className="border-t border-white/10 p-3">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-left text-sm font-medium text-slate-400 transition-colors hover:bg-white/[0.06] hover:text-white"
+          >
+            <LogoutIcon />
+            Log out
+          </button>
+        </div>
+      </aside>
+
+      {/* Main content with page scrollbar */}
+      <main className="ml-[240px]">
+        <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">{children}</div>
+      </main>
     </div>
   );
 }

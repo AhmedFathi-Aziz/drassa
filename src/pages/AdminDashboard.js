@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { getAdminUserFileCounts, getAllProfiles } from '../lib/supabase';
+import { useCache } from '../lib/CacheContext';
 import AdminLayout from '../components/AdminLayout';
-import { getAdminListCache, setAdminListCache } from '../lib/adminListCache';
 
 function getInitials(name) {
   if (!name) return '?';
@@ -14,8 +14,6 @@ function getInitials(name) {
     .slice(0, 2);
 }
 
-const ADMIN_LIST_CACHE_TTL_MS = 2 * 60 * 1000;
-
 function categoryLabel(cat) {
   if (cat === 'instructor') return 'Instructor';
   return 'Lifeguard';
@@ -23,6 +21,7 @@ function categoryLabel(cat) {
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const cache = useCache();
   const [users, setUsers] = useState([]);
   const [userFileCounts, setUserFileCounts] = useState({});
   const [loading, setLoading] = useState(true);
@@ -33,11 +32,10 @@ export default function AdminDashboard() {
     let cancelled = false;
 
     async function load() {
-      const cache = getAdminListCache();
-      const stale = !cache || Date.now() - cache.ts > ADMIN_LIST_CACHE_TTL_MS;
-      if (cache && !stale) {
-        setUsers(cache.users || []);
-        setUserFileCounts(cache.userFileCounts || {});
+      const cachedData = cache.getAdminListCache();
+      if (cachedData) {
+        setUsers(cachedData.users || []);
+        setUserFileCounts(cachedData.userFileCounts || {});
         setLoading(false);
       } else {
         setLoading(true);
@@ -55,10 +53,9 @@ export default function AdminDashboard() {
         for (const row of countRows || []) counts[row.user_id] = Number(row.total || 0);
         setUserFileCounts(counts);
 
-        setAdminListCache({
+        cache.setAdminListCache({
           users: profiles || [],
           userFileCounts: counts,
-          ts: Date.now(),
         });
       } catch (err) {
         console.error(err);
@@ -72,7 +69,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [cache]);
 
   const filteredUsers = useMemo(() => {
     if (listFilter === 'lifeguard') {

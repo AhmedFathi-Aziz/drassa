@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../lib/AuthContext';
 import { signIn, requestPasswordReset } from '../lib/supabase';
 import Navbar, { NAVBAR_CLEARANCE_PX } from '../components/Navbar';
 import MarketingFooter from '../components/MarketingFooter';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -23,8 +25,11 @@ export default function Login() {
     try {
       setStatus('Signing in…');
       await signIn({ email, password });
-      // ProtectedRoute sends admins to /admin and regular users to /dashboard.
-      navigate('/dashboard', { replace: true });
+      // Wait a moment for profile to load, then check role and navigate
+      setTimeout(() => {
+        const dashboardPath = profile?.role === 'admin' ? '/admin' : '/dashboard';
+        navigate(dashboardPath, { replace: true });
+      }, 500);
     } catch (err) {
       setError(err?.message || 'Sign in failed. Please try again.');
     } finally {

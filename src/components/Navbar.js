@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { clearLocalAuthStorage } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
+import { useCache } from '../lib/CacheContext';
 
 /** Top offset for page content below the fixed navbar (logo + padding). Keep in sync with logo height classes. */
 export const NAVBAR_CLEARANCE_PX = 96;
@@ -14,6 +15,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { session, profile, loading, logout } = useAuth();
+  const cache = useCache();
   const hasSession = !!session?.user?.id;
 
   const dashboardPath = profile?.role === 'admin' ? '/admin' : '/dashboard';
@@ -23,20 +25,23 @@ export default function Navbar() {
 
   async function handleLogout() {
     try {
+      // Redirect immediately for faster UX
+      navigate('/login', { replace: true });
+      // Clear caches and logout in the background
+      cache.clearAllCaches();
       await logout();
     } catch (e) {
       console.error(e);
     } finally {
       clearLocalAuthStorage();
-      window.location.href = '/';
     }
   }
 
   const linkIdle = 'text-[#53606b] dark:text-slate-400 font-medium hover:text-[#005288] dark:hover:text-blue-200 transition-colors bg-transparent border-0 p-0 cursor-pointer';
-  const linkActive = 'text-[#003a63] dark:text-blue-300 font-semibold border-b-2 border-[#003a63] pb-1';
+  const linkActive = 'text-[#003a63] dark:text-blue-300 font-semibold';
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-white flex justify-between items-center px-5 py-2 md:px-6 font-headline tracking-tight shadow-sm shadow-black/[0.04]">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-white flex justify-between items-center px-5 py-2 md:px-6 font-headline tracking-tight">
       <button
         type="button"
         onClick={() => navigate('/')}
@@ -95,7 +100,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="px-3 py-1.5 sm:px-4 text-sm bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-lg font-medium hover:opacity-90 transition-all"
+            className="px-4 py-2 sm:px-5 text-sm bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-lg font-medium hover:opacity-90 transition-all shadow-md"
           >
             Login
           </button>

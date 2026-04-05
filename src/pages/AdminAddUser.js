@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout';
+import { useCache } from '../lib/CacheContext';
 import { adminCreateUser, USER_CATEGORIES } from '../lib/supabase';
-import { invalidateAdminListCache } from '../lib/adminListCache';
 
 const LABELS = {
   [USER_CATEGORIES.lifeguard]: 'Lifeguard',
@@ -11,6 +11,7 @@ const LABELS = {
 
 export default function AdminAddUser() {
   const navigate = useNavigate();
+  const cache = useCache();
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -41,7 +42,7 @@ export default function AdminAddUser() {
         full_name: fullName.trim(),
         user_category: category,
       });
-      invalidateAdminListCache();
+      cache.invalidateAdminListCache();
       setSuccess('User created. Share the email, username, and password with them so they can sign in.');
       setTimeout(() => navigate('/admin'), 1800);
     } catch (err) {

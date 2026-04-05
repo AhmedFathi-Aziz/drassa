@@ -337,10 +337,23 @@ export async function uploadFile(file, userId) {
   return data;
 }
 
+/**
+ * Delete a file from DB and storage.
+ * Deletes DB record first to prevent orphaned storage files if DB delete fails.
+ * Storage cleanup is best-effort and won't fail the operation.
+ */
 export async function deleteFile(fileId, storagePath) {
-  await supabase.storage.from('user-files').remove([storagePath]);
-  const { error } = await supabase.from('files').delete().eq('id', fileId);
-  if (error) throw error;
+  // Delete from DB first (critical: prevents orphaned files if this fails)
+  const { error: dbError } = await supabase.from('files').delete().eq('id', fileId);
+  if (dbError) throw new Error(`Failed to delete file record: ${dbError.message}`);
+
+  // Then cleanup storage (best-effort; don't fail the operation if this fails)
+  try {
+    await supabase.storage.from('user-files').remove([storagePath]);
+  } catch (storageErr) {
+    console.warn(`Storage cleanup warning for ${storagePath}: ${storageErr?.message || String(storageErr)}`);
+    // Don't re-throw; file record is already deleted from DB
+  }
 }
 
 // ---- In-service training (sessions, lesson plans, attendance) ----
@@ -590,3 +603,81 @@ export async function deleteSafetyEvent(id) {
   const { error } = await supabase.from('safety_events').delete().eq('id', id);
   if (error) throw error;
 }
+
+// ---- Audit logging ----
+
+/**
+ * Get audit logs (all for admins, own for regular users).
+ * @param {object} opts - { limit?: number, offset?: number, action?: string, tableName?: string }
+ */
+export async function getAuditLogs(opts = {}) {
+  const { limit = 50, offset = 0, action, tableName } = opts;
+  let query = supabase
+    .from('audit_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+    .range(offset, offset + limit - 1);
+
+  if (action) {
+    query = query.eq('action', action);
+  }
+  if (tableName) {
+    query = query.eq('table_name', tableName);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get audit logs for a specific record (all changes to that record).
+ */
+export async function getRecordAuditLog(tableName, recordId) {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .eq('table_name', tableName)
+    .eq('record_id', recordId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Get audit logs for a specific user (actions performed by a user).
+ */
+export async function getUserAuditLog(userId, opts = {}) {
+  const { limit = 50, offset = 0 } = opts;
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+    .range(offset, offset + limit - 1);
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * Count total audit logs (for pagination).
+ */
+export async function countAuditLogs(action, tableName) {
+  let query = supabase
+    .from('audit_logs')
+    .select('id', { count: 'exact', head: true });
+  
+  if (action) {
+    query = query.eq('action', action);
+  }
+  if (tableName) {
+    query = query.eq('table_name', tableName);
+  }
+  
+  const { count, error } = await query;
+  if (error) throw new Error(`Failed to count audit logs: ${error.message}`);
+  return count || 0;
+}
+
