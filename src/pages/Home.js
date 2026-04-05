@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import Navbar, { NAVBAR_CLEARANCE_PX } from '../components/Navbar';
 import MarketingFooter from '../components/MarketingFooter';
 import { useAuth } from '../lib/AuthContext';
 
@@ -23,7 +23,7 @@ export default function Home() {
     <div className="bg-white font-body text-on-surface min-h-screen">
       <Navbar />
 
-      <main className="pt-36">
+      <main style={{ paddingTop: NAVBAR_CLEARANCE_PX }}>
         {/* Hero Section */}
         <section className="relative h-[870px] w-full overflow-hidden">
           <img

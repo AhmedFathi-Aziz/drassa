@@ -1,10 +1,10 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import Navbar from './Navbar';
+import Navbar, { NAVBAR_CLEARANCE_PX } from './Navbar';
 
-/** Must match fixed navbar clearance (see Navbar logo height). */
-export const ADMIN_NAV_OFFSET = 144;
+/** Must match fixed navbar clearance (see Navbar). */
+export const ADMIN_NAV_OFFSET = NAVBAR_CLEARANCE_PX;
 
 const UsersIcon = () => (
   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>

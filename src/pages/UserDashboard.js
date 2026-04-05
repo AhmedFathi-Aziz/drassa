@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
 import { getUserFiles } from '../lib/supabase';
-import Navbar from '../components/Navbar';
+import Navbar, { NAVBAR_CLEARANCE_PX } from '../components/Navbar';
 import DropZone from '../components/DropZone';
 import FileCard from '../components/FileCard';
 
@@ -86,7 +86,7 @@ export default function UserDashboard() {
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: NAVBAR_CLEARANCE_PX }}>
       <Navbar />
       <div style={{ background: '#fff', borderBottom: '1px solid #e9ecef', padding: '20px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>

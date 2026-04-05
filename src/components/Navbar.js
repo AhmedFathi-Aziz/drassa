@@ -3,9 +3,12 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { clearLocalAuthStorage } from '../lib/supabase';
 import { useAuth } from '../lib/AuthContext';
 
+/** Top offset for page content below the fixed navbar (logo + padding). Keep in sync with logo height classes. */
+export const NAVBAR_CLEARANCE_PX = 96;
+
 /**
  * Fixed marketing nav (same as homepage) — use on all routes.
- * Content below should clear the fixed bar (use ~144px / Tailwind `pt-36`).
+ * Content below should clear the fixed bar (see `NAVBAR_CLEARANCE_PX`).
  */
 export default function Navbar() {
   const navigate = useNavigate();
@@ -33,7 +36,7 @@ export default function Navbar() {
   const linkActive = 'text-[#003a63] dark:text-blue-300 font-semibold border-b-2 border-[#003a63] pb-1';
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-white flex justify-between items-center px-8 py-3 font-headline tracking-tight">
+    <nav className="fixed top-0 left-0 w-full z-50 bg-white dark:bg-white flex justify-between items-center px-5 py-2 md:px-6 font-headline tracking-tight shadow-sm shadow-black/[0.04]">
       <button
         type="button"
         onClick={() => navigate('/')}
@@ -42,12 +45,12 @@ export default function Navbar() {
       >
         <img
           alt="DRASSA — Drassa Academy for Safety Aquatics"
-          className="h-[72px] md:h-[88px] w-auto max-w-[min(260px,42vw)] object-contain object-left"
+          className="h-[52px] md:h-[60px] w-auto max-w-[min(220px,40vw)] object-contain object-left"
           src="/drassa-logo.png"
         />
       </button>
 
-      <div className="hidden md:flex items-center gap-8">
+      <div className="hidden md:flex items-center gap-6">
         {isHome ? (
           <span className={linkActive}>Home</span>
         ) : (
@@ -68,7 +71,7 @@ export default function Navbar() {
         )}
       </div>
 
-      <div className="flex items-center gap-4 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         {loading ? (
           <span className="text-secondary text-sm">…</span>
         ) : hasSession ? (
@@ -76,14 +79,14 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => navigate(dashboardPath)}
-              className="px-6 py-2 text-primary font-medium transition-opacity duration-200 hover:opacity-80"
+              className="px-3 py-1.5 sm:px-4 text-sm text-primary font-medium transition-opacity duration-200 hover:opacity-80"
             >
               Dashboard
             </button>
             <button
               type="button"
               onClick={handleLogout}
-              className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
+              className="px-3 py-1.5 sm:px-4 text-sm bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-lg font-medium hover:opacity-90 transition-all"
             >
               Log out
             </button>
@@ -92,7 +95,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => navigate('/login')}
-            className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
+            className="px-3 py-1.5 sm:px-4 text-sm bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-lg font-medium hover:opacity-90 transition-all"
           >
             Login
           </button>

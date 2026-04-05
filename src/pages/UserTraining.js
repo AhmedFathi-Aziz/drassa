@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import Navbar from '../components/Navbar';
+import Navbar, { NAVBAR_CLEARANCE_PX } from '../components/Navbar';
 import { listInServiceSessions, listLessonPlans } from '../lib/supabase';
 
 function formatSessionAt(iso) {
@@ -47,7 +47,7 @@ export default function UserTraining() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: NAVBAR_CLEARANCE_PX }}>
       <Navbar />
       <div
         style={{

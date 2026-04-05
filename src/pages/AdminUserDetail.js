@@ -141,7 +141,7 @@ export default function AdminUserDetail() {
         <div className="mb-8 rounded-2xl border border-outline-variant/40 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="mb-3 font-headline text-sm font-semibold text-primary">User category</h2>
           <p className="mb-3 text-xs text-secondary">
-            Lifeguards (منقذين) vs instructors (مدربين). This does not change portal login — only how you classify staff.
+            Lifeguards vs instructors. This does not change portal login — only how you classify staff.
           </p>
           <select
             disabled={categorySaving}
@@ -166,8 +166,8 @@ export default function AdminUserDetail() {
             }}
             className="max-w-xs rounded-xl border border-outline-variant/60 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1a6ab0] disabled:opacity-60"
           >
-            <option value={USER_CATEGORIES.lifeguard}>Lifeguard (منقذ)</option>
-            <option value={USER_CATEGORIES.instructor}>Instructor (مدرب)</option>
+            <option value={USER_CATEGORIES.lifeguard}>Lifeguard</option>
+            <option value={USER_CATEGORIES.instructor}>Instructor</option>
           </select>
         </div>
       )}

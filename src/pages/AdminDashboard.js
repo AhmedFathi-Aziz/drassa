@@ -141,8 +141,8 @@ export default function AdminDashboard() {
       <div className="mb-4 flex flex-wrap gap-2">
         {[
           { id: 'all', label: 'All' },
-          { id: 'lifeguard', label: 'Lifeguards (منقذين)' },
-          { id: 'instructor', label: 'Instructors (مدربين)' },
+          { id: 'lifeguard', label: 'Lifeguards' },
+          { id: 'instructor', label: 'Instructors' },
         ].map((f) => (
           <button
             key={f.id}

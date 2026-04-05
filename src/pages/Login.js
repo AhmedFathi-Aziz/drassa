@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signIn, requestPasswordReset } from '../lib/supabase';
-import Navbar from '../components/Navbar';
+import Navbar, { NAVBAR_CLEARANCE_PX } from '../components/Navbar';
 import MarketingFooter from '../components/MarketingFooter';
 
 export default function Login() {
@@ -53,7 +53,7 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: 144 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', paddingTop: NAVBAR_CLEARANCE_PX }}>
       <Navbar />
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px', background: '#ffffff' }}>
         <div style={{ background: '#fff', border: '1px solid #e9ecef', borderRadius: 20, padding: '44px 40px', width: '100%', maxWidth: 440 }}>
