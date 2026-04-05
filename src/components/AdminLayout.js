@@ -51,9 +51,21 @@ const ChartIcon = () => (
   </svg>
 );
 
+const ShieldIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path
+      d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
 /**
  * Admin shell: sidebar stays fixed while only the main column scrolls.
- * @param {'list' | 'add' | 'detail' | 'in-service' | 'lesson-plans' | 'reports'} activeNav
+ * @param {'list' | 'add' | 'detail' | 'in-service' | 'lesson-plans' | 'reports' | 'safety'} activeNav
  */
 export default function AdminLayout({ children, activeNav = 'list' }) {
   const navigate = useNavigate();
@@ -142,6 +154,18 @@ export default function AdminLayout({ children, activeNav = 'list' }) {
             >
               <ChartIcon />
               Reports
+            </button>
+
+            <p className="mb-1 mt-5 px-4 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+              Safety
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/safety')}
+              className={`${navBtn} ${activeNav === 'safety' ? navActive : navIdle}`}
+            >
+              <ShieldIcon />
+              Safety events
             </button>
           </nav>
 

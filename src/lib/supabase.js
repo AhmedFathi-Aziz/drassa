@@ -520,3 +520,73 @@ export async function listAllInServiceAttendance() {
   if (error) throw error;
   return data || [];
 }
+
+// ---- Safety events (rescues & incidents) ----
+
+export const SAFETY_EVENT_TYPES = {
+  rescue: 'rescue',
+  incident: 'incident',
+  near_miss: 'near_miss',
+  medical: 'medical',
+  other: 'other',
+};
+
+export const SAFETY_SEVERITY = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+  critical: 'critical',
+};
+
+export async function listSafetyEvents() {
+  const { data, error } = await supabase
+    .from('safety_events')
+    .select('*')
+    .order('occurred_at', { ascending: false });
+  if (error) throw error;
+  return data || [];
+}
+
+/**
+ * @param {{
+ *   title: string,
+ *   event_type: keyof typeof SAFETY_EVENT_TYPES,
+ *   severity?: keyof typeof SAFETY_SEVERITY | null,
+ *   description?: string|null,
+ *   location?: string|null,
+ *   occurred_at: string,
+ *   actions_taken?: string|null,
+ *   reporter_display?: string|null,
+ * }} payload
+ */
+export async function createSafetyEvent(payload) {
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData?.user?.id) {
+    throw new Error(userErr?.message || 'You must be signed in.');
+  }
+  const uid = userData.user.id;
+
+  const { data, error } = await supabase
+    .from('safety_events')
+    .insert({
+      title: payload.title.trim(),
+      event_type: payload.event_type,
+      severity: payload.severity || null,
+      description: payload.description?.trim() || null,
+      location: payload.location?.trim() || null,
+      occurred_at: payload.occurred_at,
+      actions_taken: payload.actions_taken?.trim() || null,
+      reporter_display: payload.reporter_display?.trim() || null,
+      created_by: uid,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteSafetyEvent(id) {
+  const { error } = await supabase.from('safety_events').delete().eq('id', id);
+  if (error) throw error;
+}

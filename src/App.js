@@ -14,6 +14,9 @@ import AdminInServiceNew from './pages/AdminInServiceNew';
 import AdminInServiceDetail from './pages/AdminInServiceDetail';
 import AdminLessonPlans from './pages/AdminLessonPlans';
 import AdminTrainingReports from './pages/AdminTrainingReports';
+import AdminSafetyEventList from './pages/AdminSafetyEventList';
+import AdminSafetyEventNew from './pages/AdminSafetyEventNew';
+import UserSafetyEvents from './pages/UserSafetyEvents';
 import ResetPassword from './pages/ResetPassword';
 import AuthLoadingScreen from './components/AuthLoadingScreen';
 
@@ -83,6 +86,7 @@ export default function App() {
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path="/dashboard/training" element={<ProtectedRoute><UserTraining /></ProtectedRoute>} />
+          <Route path="/dashboard/safety" element={<ProtectedRoute><UserSafetyEvents /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/add-user" element={<ProtectedRoute adminOnly><AdminAddUser /></ProtectedRoute>} />
           <Route path="/admin/user/:userId" element={<ProtectedRoute adminOnly><AdminUserDetail /></ProtectedRoute>} />
@@ -91,6 +95,8 @@ export default function App() {
           <Route path="/admin/in-service/:sessionId" element={<ProtectedRoute adminOnly><AdminInServiceDetail /></ProtectedRoute>} />
           <Route path="/admin/lesson-plans" element={<ProtectedRoute adminOnly><AdminLessonPlans /></ProtectedRoute>} />
           <Route path="/admin/reports" element={<ProtectedRoute adminOnly><AdminTrainingReports /></ProtectedRoute>} />
+          <Route path="/admin/safety" element={<ProtectedRoute adminOnly><AdminSafetyEventList /></ProtectedRoute>} />
+          <Route path="/admin/safety/new" element={<ProtectedRoute adminOnly><AdminSafetyEventNew /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

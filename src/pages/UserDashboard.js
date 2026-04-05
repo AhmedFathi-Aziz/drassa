@@ -93,7 +93,7 @@ export default function UserDashboard() {
           <h2 style={{ fontSize: 18, fontWeight: 700, color: '#343a40', marginBottom: 2 }}>Good day, {firstName} 👋</h2>
           <p style={{ fontSize: 13, color: '#868e96' }}>Manage and upload your files securely</p>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Link
             to="/dashboard/training"
             style={{
@@ -107,6 +107,20 @@ export default function UserDashboard() {
             }}
           >
             In-service training
+          </Link>
+          <Link
+            to="/dashboard/safety"
+            style={{
+              fontSize: 13,
+              fontWeight: 600,
+              color: '#1a6ab0',
+              textDecoration: 'none',
+              padding: '8px 14px',
+              borderRadius: 10,
+              border: '1px solid #1a6ab0',
+            }}
+          >
+            Safety events
           </Link>
           <span style={{ fontSize: 12, color: '#adb5bd' }}>@{profile?.username}</span>
         </div>
