@@ -3,6 +3,17 @@ import { signOutSafe, supabase, getProfile, getProfileByEmail } from '../lib/sup
 
 const AuthContext = createContext(null);
 
+const PROFILE_FETCH_TIMEOUT_MS = 14_000;
+
+function withTimeout(promise, ms, label) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms)
+    ),
+  ]);
+}
+
 function buildFallbackProfile(user) {
   if (!user) return null;
   const meta = user.user_metadata || {};
@@ -37,30 +48,31 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
 
-    // Get initial session
+    // Get initial session — always clear `loading` when the promise settles (avoids infinite spinner if
+    // Strict Mode tears down the effect before a guarded `setLoading(false)` runs).
     supabase.auth
       .getSession()
       .then(({ data: { session } }) => {
+        setLoading(false);
         if (!active) return;
         const validSession = session?.user?.id ? session : null;
         setSession(validSession);
-        setLoading(false);
         if (validSession?.user?.id) fetchProfile(validSession.user);
       })
       .catch((err) => {
-        if (!active) return;
         console.error('Failed to get session:', err);
-        setProfileError(err?.message || 'Failed to get session');
         setLoading(false);
+        if (!active) return;
+        setProfileError(err?.message || 'Failed to get session');
       });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!active) return;
       const validSession = session?.user?.id ? session : null;
-      setSession(validSession);
       setLoading(false);
+      if (!active) return;
+      setSession(validSession);
       if (validSession?.user?.id) {
         const uid = validSession.user.id;
         // Token refresh / duplicate init: do not refetch or flash the route loading screen.
@@ -104,16 +116,19 @@ export function AuthProvider({ children }) {
       setProfileError('');
       let p;
       try {
-        p = await getProfile(userId);
+        p = await withTimeout(getProfile(userId), PROFILE_FETCH_TIMEOUT_MS, 'Profile fetch');
       } catch (firstErr) {
         // Supabase projects can be slow on first request (cold start); retry once.
-        await new Promise(resolve => setTimeout(resolve, 1200));
+        await new Promise((resolve) => setTimeout(resolve, 1200));
         try {
-          p = await getProfile(userId);
+          p = await withTimeout(getProfile(userId), PROFILE_FETCH_TIMEOUT_MS, 'Profile fetch (retry)');
         } catch (secondErr) {
           if (!email) throw secondErr;
-          // Fallback: some environments may have profile row keyed differently; try by email.
-          p = await getProfileByEmail(email);
+          p = await withTimeout(
+            getProfileByEmail(email),
+            PROFILE_FETCH_TIMEOUT_MS,
+            'Profile fetch by email'
+          );
         }
       }
       setProfile(p);
