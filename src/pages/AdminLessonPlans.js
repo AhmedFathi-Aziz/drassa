@@ -23,6 +23,7 @@ export default function AdminLessonPlans() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [file, setFile] = useState(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
@@ -69,6 +70,7 @@ export default function AdminLessonPlans() {
       setTitle('');
       setDescription('');
       setFile(null);
+      setFileInputKey((k) => k + 1);
       await refresh();
     } catch (err) {
       console.error(err);
@@ -141,6 +143,7 @@ export default function AdminLessonPlans() {
             File
           </label>
           <input
+            key={fileInputKey}
             id="lp-file"
             type="file"
             onChange={(e) => setFile(e.target.files?.[0] || null)}

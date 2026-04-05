@@ -408,24 +408,45 @@ export async function listLessonPlans() {
  * @param {{ title: string, description?: string|null }} meta
  */
 export async function uploadLessonPlan(file, meta) {
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const uid = session?.user?.id;
-  if (!uid) throw new Error('You must be signed in.');
+  const { data: userData, error: userErr } = await supabase.auth.getUser();
+  if (userErr || !userData?.user?.id) {
+    throw new Error(userErr?.message || 'You must be signed in.');
+  }
+  const uid = userData.user.id;
 
-  const safeName = file.name.replace(/[^\w.-]+/g, '_');
+  const safeName = (file.name || 'file').replace(/[^\w.-]+/g, '_');
   const storagePath = `${uid}/${Date.now()}_${safeName}`;
 
-  const { error: uploadError } = await supabase.storage
+  const uploadPayload = supabase.storage
     .from('lesson-plans')
-    .upload(storagePath, file, { cacheControl: '3600', upsert: false });
+    .upload(storagePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'application/octet-stream',
+    });
 
-  if (uploadError) throw new Error(uploadError.message || 'Upload failed');
+  let uploadError;
+  try {
+    const { error } = await withTimeout(uploadPayload, 45000, 'Lesson plan storage upload');
+    uploadError = error;
+  } catch (timeoutErr) {
+    throw new Error(
+      `${timeoutErr?.message || 'Upload timed out'}. Check Supabase → Storage: bucket "lesson-plans" exists and insert policies from the migration are applied.`
+    );
+  }
+
+  if (uploadError) {
+    const msg = uploadError.message || String(uploadError);
+    const hint =
+      /bucket|not found|row-level security|policy|permission/i.test(msg)
+        ? ' In Dashboard → Storage, create bucket "lesson-plans" (public) and run storage policies from supabase/migrations/20260405120000_in_service_training.sql.'
+        : '';
+    throw new Error(`Storage upload failed: ${msg}.${hint}`);
+  }
 
   const { data: urlData } = supabase.storage.from('lesson-plans').getPublicUrl(storagePath);
 
-  const { data, error } = await supabase
+  const insertPayload = supabase
     .from('lesson_plans')
     .insert({
       title: meta.title.trim(),
@@ -440,7 +461,21 @@ export async function uploadLessonPlan(file, meta) {
     .select()
     .single();
 
-  if (error) throw error;
+  let data;
+  let error;
+  try {
+    const result = await withTimeout(insertPayload, 30000, 'Lesson plan database save');
+    data = result.data;
+    error = result.error;
+  } catch (timeoutErr) {
+    await supabase.storage.from('lesson-plans').remove([storagePath]).catch(() => {});
+    throw new Error(timeoutErr?.message || 'Saving lesson plan metadata timed out.');
+  }
+
+  if (error) {
+    await supabase.storage.from('lesson-plans').remove([storagePath]).catch(() => {});
+    throw new Error(error.message || String(error));
+  }
   return data;
 }
 
