@@ -42,19 +42,53 @@ export function clearLocalAuthStorage() {
 }
 
 // ---- Auth helpers ----
+// Public self-signup is disabled; admins create users via Edge Function `create-user`.
 
-export async function signUp({ username, fullName, email, password }) {
-  const emailRedirectTo = typeof window !== 'undefined' ? `${window.location.origin}/` : undefined;
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { username, full_name: fullName, role: 'user' },
-      emailRedirectTo,
+export const USER_CATEGORIES = {
+  lifeguard: 'lifeguard',
+  instructor: 'instructor',
+};
+
+/**
+ * Admin-only: creates auth user + profile (via trigger). Requires deployed `create-user` Edge Function.
+ * @param {{ email: string, password: string, username: string, full_name: string, user_category?: 'lifeguard'|'instructor' }} payload
+ */
+function explainEdgeFunctionFailure(message) {
+  const base = message || 'Edge Function request failed';
+  if (/failed to send|fetch|network|edge function/i.test(base)) {
+    return `${base}
+
+لازم تنشر دالة create-user على مشروع Supabase (مرة واحدة):
+1) ثبّت Supabase CLI وادخل: supabase login && supabase link
+2) من مجلد المشروع: supabase functions deploy create-user
+
+بعد النشر، جرّب إضافة المستخدم تاني من localhost — الطلب بيروح لنفس مشروعك على السحابة.`;
+  }
+  return base;
+}
+
+export async function adminCreateUser(payload) {
+  const { data, error } = await supabase.functions.invoke('create-user', {
+    body: {
+      email: payload.email,
+      password: payload.password,
+      username: payload.username,
+      full_name: payload.full_name,
+      user_category: payload.user_category ?? USER_CATEGORIES.lifeguard,
     },
   });
-  if (error) throw error;
+  if (error) {
+    throw new Error(explainEdgeFunctionFailure(error.message));
+  }
+  if (data?.error) throw new Error(data.error);
   return data;
+}
+
+/** Admin-only: update lifeguard / instructor classification (RLS: admin policy). */
+export async function adminUpdateUserCategory(userId, userCategory) {
+  const cat = userCategory === USER_CATEGORIES.instructor ? USER_CATEGORIES.instructor : USER_CATEGORIES.lifeguard;
+  const { error } = await supabase.from('profiles').update({ user_category: cat }).eq('id', userId);
+  if (error) throw error;
 }
 
 export async function signIn({ email, password }) {

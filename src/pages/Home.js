@@ -42,10 +42,10 @@ export default function Home() {
               <div className="flex flex-wrap gap-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/login')}
                   className="px-10 py-4 bg-on-primary text-primary rounded-xl font-bold text-lg hover:bg-primary-fixed transition-colors"
                 >
-                  Request Access
+                  Sign in
                 </button>
                 <button
                   type="button"
@@ -164,10 +164,10 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <button
                   type="button"
-                  onClick={() => navigate('/signup')}
+                  onClick={() => navigate('/login')}
                   className="px-12 py-5 bg-tertiary-fixed text-on-tertiary-fixed font-bold rounded-xl text-lg hover:shadow-lg transition-all"
                 >
-                  Onboard Your Hotel
+                  Sign in to portal
                 </button>
                 <button
                   type="button"

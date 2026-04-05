@@ -89,22 +89,13 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => navigate('/login')}
-              className="px-6 py-2 text-primary font-medium transition-opacity duration-200 hover:opacity-80"
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => navigate('/signup')}
-              className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
-            >
-              Sign Up
-            </button>
-          </>
+          <button
+            type="button"
+            onClick={() => navigate('/login')}
+            className="px-6 py-2 bg-gradient-to-r from-primary to-primary-container text-on-primary rounded-xl font-medium hover:opacity-90 transition-all"
+          >
+            Login
+          </button>
         )}
       </div>
     </nav>

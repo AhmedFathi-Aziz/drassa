@@ -4,9 +4,9 @@ import { AuthProvider, useAuth } from './lib/AuthContext';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
-import Signup from './pages/Signup';
 import UserDashboard from './pages/UserDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminAddUser from './pages/AdminAddUser';
 import AdminUserDetail from './pages/AdminUserDetail';
 import ResetPassword from './pages/ResetPassword';
 import AuthLoadingScreen from './components/AuthLoadingScreen';
@@ -47,10 +47,11 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<GuestRoute><Login /></GuestRoute>} />
-          <Route path="/signup" element={<GuestRoute><Signup /></GuestRoute>} />
+          <Route path="/signup" element={<Navigate to="/login" replace />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<ProtectedRoute><UserDashboard /></ProtectedRoute>} />
           <Route path="/admin" element={<ProtectedRoute adminOnly><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/add-user" element={<ProtectedRoute adminOnly><AdminAddUser /></ProtectedRoute>} />
           <Route path="/admin/user/:userId" element={<ProtectedRoute adminOnly><AdminUserDetail /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

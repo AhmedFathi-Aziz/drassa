@@ -32,15 +32,17 @@ drassa-portal/
 │   │   └── AuthContext.js    # React auth context (session management)
 │   ├── pages/
 │   │   ├── Home.js           # Landing page
-│   │   ├── Login.js          # Login page
-│   │   ├── Signup.js         # Signup page
+│   │   ├── Login.js          # Login page (no public signup)
 │   │   ├── UserDashboard.js  # User file manager
-│   │   ├── AdminDashboard.js # Admin: all users list
+│   │   ├── AdminDashboard.js # Admin: user list (lifeguards / instructors)
+│   │   ├── AdminAddUser.js   # Admin: create user accounts
 │   │   └── AdminUserDetail.js# Admin: single user files
 │   ├── App.js                # Routes + auth guards
 │   ├── index.js              # Entry point
 │   └── index.css             # Global styles
-├── supabase_setup.sql        # ← Run this in Supabase SQL Editor
+├── supabase_setup.sql        # ← Run this in Supabase SQL Editor (fresh DB)
+├── supabase/migrations/      # ← Extra SQL for existing projects (user categories, etc.)
+├── supabase/functions/       # ← Edge Function: admin-only user creation
 ├── .env.example              # ← Copy to .env and fill in your keys
 └── package.json
 ```
@@ -102,20 +104,19 @@ npm start
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Step 6 — Create the Admin User
+### Step 6 — Create the first admin (no public signup)
 
-1. Go to your running app and sign up with:
-   - Full Name: `Administrator`
-   - Username: `admin`
-   - Email: `admin@drassa.ae` (or any email you want)
-   - Password: your choice
+Public self-registration is **disabled**. Create the first account in **Supabase Dashboard → Authentication → Users → Add user** (email + password). In **User metadata** set at least:
 
-2. Then go to **Supabase → SQL Editor** and run:
-   ```sql
-   UPDATE public.profiles SET role = 'admin' WHERE username = 'admin';
-   ```
+`{"username":"admin","full_name":"Administrator","role":"user"}`
 
-3. Log out and log back in — you will now see the Admin Panel.
+The `handle_new_user` trigger creates the `profiles` row. Then promote to admin in **SQL Editor**:
+
+```sql
+UPDATE public.profiles SET role = 'admin' WHERE username = 'admin';
+```
+
+Log in at `/login`. Further staff accounts are created from **Admin → Add user** after you deploy the `create-user` Edge Function (see `supabase/functions/create-user`).
 
 ---
 
@@ -144,7 +145,7 @@ vercel
 ## Features
 
 ### For Users
-- Sign up with full name, username, email, password
+- Accounts are created by an **admin** (lifeguard or instructor category); users log in with the email/username and password they were given
 - Log in securely (Supabase Auth with JWT tokens)
 - Drag & drop or browse to upload files
 - Supported: PDF, JPG, PNG, WEBP, GIF, MP4, MOV, AVI, WEBM (up to 100MB each)
@@ -154,10 +155,10 @@ vercel
 - Click any file to open/preview it
 
 ### For Admins
-- See all registered users with file counts
-- Click any user to view their uploaded files
-- File counts shown per type (PDF / Image / Video)
-- Read-only view of user files (cannot delete user files)
+- **Add user**: create accounts (email, username, password, category: lifeguard or instructor)
+- **User list**: filter by **Lifeguards (منقذين)** / **Instructors (مدربين)** / all; file counts per user
+- Open a user to view files and change their category
+- Read-only view of user files on the admin detail page (cannot delete user files from there)
 
 ---
 
@@ -196,7 +197,9 @@ vercel
 | Problem | Solution |
 |---|---|
 | "Missing Supabase environment variables" | Make sure `.env` file exists and has both keys |
-| Signup works but profile not created | Check that the SQL trigger was created successfully |
+| Public signup removed | Only admins create users (Admin → Add user); deploy the `create-user` Edge Function |
+| “Add user” fails / function error | Run `supabase functions deploy create-user` and apply migration `user_category` SQL |
+| Profile missing `user_category` column | Run `supabase/migrations/20260205120000_user_category_admin_policies.sql` in SQL Editor |
 | Files upload but don't appear | Check the `files` table RLS policy in Supabase |
 | Admin panel not showing | Run the SQL `UPDATE profiles SET role = 'admin'` command |
 | Vercel deploy fails | Make sure env vars are set in Vercel dashboard |

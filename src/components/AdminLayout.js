@@ -18,6 +18,12 @@ const PersonIcon = () => (
   </svg>
 );
 
+const AddIcon = () => (
+  <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
+    <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
 const LogoutIcon = () => (
   <svg width="16" height="16" fill="none" viewBox="0 0 24 24" aria-hidden>
     <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
@@ -26,9 +32,9 @@ const LogoutIcon = () => (
 
 /**
  * Admin shell: sidebar stays fixed while only the main column scrolls.
- * @param {'users' | 'detail'} activeNav
+ * @param {'list' | 'add' | 'detail'} activeNav
  */
-export default function AdminLayout({ children, activeNav = 'users' }) {
+export default function AdminLayout({ children, activeNav = 'list' }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -69,10 +75,18 @@ export default function AdminLayout({ children, activeNav = 'users' }) {
             <button
               type="button"
               onClick={() => navigate('/admin')}
-              className={`${navBtn} ${activeNav === 'users' ? navActive : navIdle}`}
+              className={`${navBtn} ${activeNav === 'list' ? navActive : navIdle}`}
             >
               <UsersIcon />
-              All Users
+              User list
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate('/admin/add-user')}
+              className={`${navBtn} ${activeNav === 'add' ? navActive : navIdle}`}
+            >
+              <AddIcon />
+              Add user
             </button>
             {activeNav === 'detail' && (
               <div className={`${navBtn} ${navActive} cursor-default`}>

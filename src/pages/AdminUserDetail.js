@@ -1,6 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { getAdminUserProfile, getFilesForUser } from '../lib/supabase';
+import {
+  adminUpdateUserCategory,
+  getAdminUserProfile,
+  getFilesForUser,
+  USER_CATEGORIES,
+} from '../lib/supabase';
+import { invalidateAdminListCache } from '../lib/adminListCache';
 import FileCard from '../components/FileCard';
 import AdminLayout from '../components/AdminLayout';
 
@@ -24,6 +30,7 @@ export default function AdminUserDetail() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
+  const [categorySaving, setCategorySaving] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -129,6 +136,41 @@ export default function AdminUserDetail() {
           )}
         </div>
       </div>
+
+      {userProfile && (
+        <div className="mb-8 rounded-2xl border border-outline-variant/40 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="mb-3 font-headline text-sm font-semibold text-primary">User category</h2>
+          <p className="mb-3 text-xs text-secondary">
+            Lifeguards (منقذين) vs instructors (مدربين). This does not change portal login — only how you classify staff.
+          </p>
+          <select
+            disabled={categorySaving}
+            value={userProfile.user_category === 'instructor' ? 'instructor' : 'lifeguard'}
+            onChange={async (e) => {
+              const v = e.target.value === 'instructor' ? USER_CATEGORIES.instructor : USER_CATEGORIES.lifeguard;
+              setCategorySaving(true);
+              try {
+                await adminUpdateUserCategory(userId, v);
+                setUserProfile((p) => (p ? { ...p, user_category: v } : p));
+                const entry = detailCache.get(userId);
+                if (entry?.profile) {
+                  detailCache.set(userId, { ...entry, profile: { ...entry.profile, user_category: v } });
+                }
+                invalidateAdminListCache();
+              } catch (err) {
+                console.error(err);
+                setError(err?.message || 'Could not update category');
+              } finally {
+                setCategorySaving(false);
+              }
+            }}
+            className="max-w-xs rounded-xl border border-outline-variant/60 bg-white px-3 py-2.5 text-sm outline-none focus:border-[#1a6ab0] disabled:opacity-60"
+          >
+            <option value={USER_CATEGORIES.lifeguard}>Lifeguard (منقذ)</option>
+            <option value={USER_CATEGORIES.instructor}>Instructor (مدرب)</option>
+          </select>
+        </div>
+      )}
 
       <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[

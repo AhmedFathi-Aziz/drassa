@@ -14,6 +14,7 @@ function buildFallbackProfile(user) {
     username: meta.username || (email.split('@')[0] || 'user'),
     full_name: meta.full_name || guessedName,
     role: meta.role || 'user',
+    user_category: meta.user_category === 'instructor' ? 'instructor' : 'lifeguard',
   };
 }
 

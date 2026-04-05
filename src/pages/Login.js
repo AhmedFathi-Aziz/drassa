@@ -155,9 +155,8 @@ export default function Login() {
             </button>
           </form>
 
-          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#868e96' }}>
-            Don't have an account?{' '}
-            <span onClick={() => navigate('/signup')} style={{ color: '#1a6ab0', cursor: 'pointer', fontWeight: 500 }}>Sign Up</span>
+          <p style={{ textAlign: 'center', marginTop: 20, fontSize: 13, color: '#868e96', lineHeight: 1.5 }}>
+            Accounts are created by an administrator. If you need access, contact your admin.
           </p>
         </div>
       </div>

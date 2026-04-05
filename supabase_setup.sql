@@ -11,6 +11,7 @@ create table public.profiles (
   full_name text not null,
   email text not null,
   role text not null default 'user' check (role in ('user', 'admin')),
+  user_category text not null default 'lifeguard' check (user_category in ('lifeguard', 'instructor')),
   created_at timestamptz default now()
 );
 
@@ -48,6 +49,10 @@ create policy "Admins can view all profiles"
 create policy "Users can update own profile"
   on public.profiles for update
   using (auth.uid() = id);
+
+create policy "Admins can update any profile"
+  on public.profiles for update
+  using (public.is_admin());
 
 -- Admin-only RPC to list all non-admin users without relying on caller RLS state
 create or replace function public.admin_list_user_profiles()
@@ -214,13 +219,14 @@ create policy "Users can delete own files"
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, username, full_name, email, role)
+  insert into public.profiles (id, username, full_name, email, role, user_category)
   values (
     new.id,
-    new.raw_user_meta_data->>'username',
-    new.raw_user_meta_data->>'full_name',
+    coalesce(new.raw_user_meta_data->>'username', split_part(new.email, '@', 1)),
+    coalesce(new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
     new.email,
-    coalesce(new.raw_user_meta_data->>'role', 'user')
+    coalesce(new.raw_user_meta_data->>'role', 'user'),
+    coalesce(new.raw_user_meta_data->>'user_category', 'lifeguard')
   );
   return new;
 end;
@@ -230,6 +236,6 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
 
--- 5. CREATE ADMIN USER (run this AFTER creating the admin via the app's signup)
+-- 5. CREATE ADMIN USER (run after creating the first admin account in Supabase Auth / SQL)
 -- Replace 'admin-user-uuid-here' with the actual UUID from auth.users
 -- update public.profiles set role = 'admin' where username = 'admin';
