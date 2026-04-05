@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   adminUpdateUserCategory,
@@ -31,9 +31,12 @@ export default function AdminUserDetail() {
   const [filter, setFilter] = useState('all');
   const [error, setError] = useState('');
   const [categorySaving, setCategorySaving] = useState(false);
+  /** Bumps on each [userId] effect run so Strict Mode cleanups cannot strand loading=true. */
+  const loadSeqRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    const seq = ++loadSeqRef.current;
 
     const withTimeout = (promise, ms, label) =>
       Promise.race([
@@ -44,34 +47,47 @@ export default function AdminUserDetail() {
       ]);
 
     async function load() {
-      if (cancelled) return;
+      if (!userId) {
+        if (seq === loadSeqRef.current) {
+          setLoading(false);
+          setError('Invalid user link.');
+        }
+        return;
+      }
+
       const cached = detailCache.get(userId);
       if (cached) {
-        setUserProfile(cached.profile || null);
-        setFiles(cached.files || []);
-        setLoading(false);
-      } else {
+        if (!cancelled) {
+          setUserProfile(cached.profile || null);
+          setFiles(cached.files || []);
+          setLoading(false);
+        }
+      } else if (!cancelled) {
         setLoading(true);
       }
+
       setError('');
       let latestProfile = cached?.profile || null;
       let latestFiles = cached?.files || [];
-      try {
-        const prof = await withTimeout(getAdminUserProfile(userId), 12000, 'Profile request');
-        latestProfile = prof;
-        if (!cancelled) setUserProfile(prof);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setError(err?.message || 'Failed to load user profile');
-      }
 
       try {
-        const userFiles = await withTimeout(getFilesForUser(userId), 12000, 'Files request');
-        latestFiles = userFiles || [];
-        if (!cancelled) setFiles(latestFiles);
-      } catch (err) {
-        console.error(err);
-        if (!cancelled) setError((prev) => prev || err?.message || 'Failed to load user files');
+        try {
+          const prof = await withTimeout(getAdminUserProfile(userId), 12000, 'Profile request');
+          latestProfile = prof;
+          if (!cancelled) setUserProfile(prof);
+        } catch (err) {
+          console.error(err);
+          if (!cancelled) setError(err?.message || 'Failed to load user profile');
+        }
+
+        try {
+          const userFiles = await withTimeout(getFilesForUser(userId), 12000, 'Files request');
+          latestFiles = userFiles || [];
+          if (!cancelled) setFiles(latestFiles);
+        } catch (err) {
+          console.error(err);
+          if (!cancelled) setError((prev) => prev || err?.message || 'Failed to load user files');
+        }
       } finally {
         if (!cancelled) {
           detailCache.set(userId, {
@@ -80,7 +96,10 @@ export default function AdminUserDetail() {
             ts: Date.now(),
           });
         }
-        if (!cancelled) setLoading(false);
+        // Latest in-flight load clears loading; skip if this run was aborted (Strict Mode / navigation).
+        if (seq === loadSeqRef.current && !cancelled) {
+          setLoading(false);
+        }
       }
     }
 
