@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { signOutSafe, supabase, getProfile, getProfileByEmail } from '../lib/supabase';
 
 const AuthContext = createContext(null);
 
 const PROFILE_FETCH_TIMEOUT_MS = 14_000;
+const GET_SESSION_TIMEOUT_MS = 12_000;
 
 function withTimeout(promise, ms, label) {
   return Promise.race([
@@ -33,92 +34,38 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(null);
   const [profile, setProfile] = useState(null);
   const [profileError, setProfileError] = useState('');
-  /** True while resolving the profiles row for the current session (gates role-based routes). */
   const [profileLoading, setProfileLoading] = useState(false);
-  // "loading" should only block routing until we know session exists or not.
-  // Profile loading can be slow/stall (network, cold start) and must not freeze the app.
   const [loading, setLoading] = useState(true);
-  /** Latest profile for fetchProfile / auth callbacks (avoids stale closure). */
+
   const profileRef = useRef(null);
+  /** Same-uid profile fetch in flight — avoids duplicate parallel loads freezing UI state. */
+  const profileFetchPromisesRef = useRef(new Map());
 
   useEffect(() => {
     profileRef.current = profile;
   }, [profile]);
 
-  useEffect(() => {
-    let active = true;
-
-    // Get initial session — always clear `loading` when the promise settles (avoids infinite spinner if
-    // Strict Mode tears down the effect before a guarded `setLoading(false)` runs).
-    supabase.auth
-      .getSession()
-      .then(({ data: { session } }) => {
-        setLoading(false);
-        if (!active) return;
-        const validSession = session?.user?.id ? session : null;
-        setSession(validSession);
-        if (validSession?.user?.id) fetchProfile(validSession.user);
-      })
-      .catch((err) => {
-        console.error('Failed to get session:', err);
-        setLoading(false);
-        if (!active) return;
-        setProfileError(err?.message || 'Failed to get session');
-      });
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      const validSession = session?.user?.id ? session : null;
-      setLoading(false);
-      if (!active) return;
-      setSession(validSession);
-      if (validSession?.user?.id) {
-        const uid = validSession.user.id;
-        // Token refresh / duplicate init: do not refetch or flash the route loading screen.
-        if (_event === 'TOKEN_REFRESHED' && profileRef.current?.id === uid) {
-          return;
-        }
-        if (_event === 'INITIAL_SESSION' && profileRef.current?.id === uid) {
-          return;
-        }
-        await fetchProfile(validSession.user);
-      } else {
-        setProfile(null);
-        setProfileError('');
-        setProfileLoading(false);
-      }
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-
-  async function fetchProfile(user) {
+  const fetchProfileImpl = useCallback(async (user) => {
     const userId = user?.id;
     const email = user?.email;
     if (!userId) {
       setProfile(null);
       setProfileError('');
       setProfileLoading(false);
-      setLoading(false);
       return;
     }
 
-    // Only block protected/guest routes when we do not yet have this user's profile.
     const alreadyHaveUser = profileRef.current?.id === userId;
     if (!alreadyHaveUser) {
       setProfileLoading(true);
     }
+
     try {
       setProfileError('');
       let p;
       try {
         p = await withTimeout(getProfile(userId), PROFILE_FETCH_TIMEOUT_MS, 'Profile fetch');
       } catch (firstErr) {
-        // Supabase projects can be slow on first request (cold start); retry once.
         await new Promise((resolve) => setTimeout(resolve, 1200));
         try {
           p = await withTimeout(getProfile(userId), PROFILE_FETCH_TIMEOUT_MS, 'Profile fetch (retry)');
@@ -134,23 +81,92 @@ export function AuthProvider({ children }) {
       setProfile(p);
       setProfileError('');
     } catch (err) {
-      // Preserve existing profile on transient failures (e.g. tab background throttling).
-      // Only clear when we never had a profile yet.
-      setProfile(prev => prev || buildFallbackProfile(user));
+      setProfile((prev) => prev || buildFallbackProfile(user));
       setProfileError(err?.message || 'Failed to load profile');
       console.error('Failed to fetch profile:', err);
     } finally {
       setProfileLoading(false);
     }
-  }
+  }, []);
+
+  const fetchProfile = useCallback(
+    async (user) => {
+      const uid = user?.id;
+      if (!uid) {
+        await fetchProfileImpl(user);
+        return;
+      }
+      const existing = profileFetchPromisesRef.current.get(uid);
+      if (existing) {
+        await existing;
+        return;
+      }
+      const p = fetchProfileImpl(user).finally(() => {
+        profileFetchPromisesRef.current.delete(uid);
+      });
+      profileFetchPromisesRef.current.set(uid, p);
+      await p;
+    },
+    [fetchProfileImpl]
+  );
+
+  useEffect(() => {
+    let active = true;
+
+    withTimeout(supabase.auth.getSession(), GET_SESSION_TIMEOUT_MS, 'getSession')
+      .then(({ data: { session: s } }) => {
+        setLoading(false);
+        if (!active) return;
+        const validSession = s?.user?.id ? s : null;
+        setSession(validSession);
+        // Do not touch profileLoading here — it races with onAuthStateChange + fetchProfile and can
+        // flip back to true after fetch completes, leaving routes stuck on the loading screen.
+      })
+      .catch((err) => {
+        console.error('Failed to get session:', err);
+        setLoading(false);
+        if (!active) return;
+        setProfileError(err?.message || 'Failed to get session');
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const validSession = session?.user?.id ? session : null;
+      setLoading(false);
+      if (!active) return;
+
+      setSession(validSession);
+
+      if (validSession?.user?.id) {
+        await fetchProfile(validSession.user);
+      } else {
+        setProfile(null);
+        setProfileError('');
+        setProfileLoading(false);
+        profileFetchPromisesRef.current.clear();
+      }
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [fetchProfile]);
+
+  // If we have a session but never got a profile row and nothing is loading, recover (e.g. missed INITIAL_SESSION).
+  useEffect(() => {
+    if (!session?.user?.id || profile != null || profileLoading) return;
+    fetchProfile(session.user);
+  }, [session, profile, profileLoading, fetchProfile]);
 
   async function logout() {
-    // Optimistically clear UI state immediately, then sign out in background.
     setSession(null);
     setProfile(null);
     setProfileError('');
     setProfileLoading(false);
     setLoading(false);
+    profileFetchPromisesRef.current.clear();
     signOutSafe({ scope: 'local' }).catch(() => {});
   }
 
