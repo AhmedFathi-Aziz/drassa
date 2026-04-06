@@ -147,7 +147,7 @@ export default function AdminLayout({ children, activeNav = 'list' }) {
             className={`${navBtn} ${activeNav === 'in-service' ? navActive : navIdle}`}
           >
             <TrainingIcon />
-            Training sessions
+            Add In-service
           </button>
           <button
             type="button"
