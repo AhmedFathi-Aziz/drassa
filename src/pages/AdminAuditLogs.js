@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getAuditLogs, countAuditLogs } from '../lib/supabase';
 import AdminLayout from '../components/AdminLayout';
 

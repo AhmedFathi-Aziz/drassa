@@ -20,7 +20,7 @@ export function CacheProvider({ children }) {
       return null;
     }
     return adminListCache;
-  }, [adminListCache, cacheTimestamp]);
+  }, [adminListCache, cacheTimestamp, CACHE_DURATION_MS]);
 
   const setAdminListCacheData = useCallback((data) => {
     setAdminListCache(data);

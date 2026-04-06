@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../lib/AuthContext';
-import Navbar, { NAVBAR_CLEARANCE_PX } from './Navbar';
+import { NAVBAR_CLEARANCE_PX } from './Navbar';
 
 /** Must match fixed navbar clearance (see Navbar). */
 export const ADMIN_NAV_OFFSET = NAVBAR_CLEARANCE_PX;
