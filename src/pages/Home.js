@@ -52,7 +52,7 @@ export default function Home() {
                   onClick={() => navigate(hasSession ? dashboardPath : '/login')}
                   className="px-10 py-4 glass-panel border border-on-primary/20 text-on-primary rounded-xl font-bold text-lg hover:bg-on-primary/20 transition-colors"
                 >
-                  View Dashboard Demo
+                  View Dashboard
                 </button>
               </div>
             </div>
@@ -96,21 +96,15 @@ export default function Home() {
               <div className="aspect-[4/5] rounded-full overflow-hidden shadow-2xl">
                 <img alt="" className="w-full h-full object-cover" src={IMG_MISSION} />
               </div>
-              <div className="absolute -bottom-6 -left-6 bg-tertiary-fixed p-8 rounded-xl shadow-xl max-w-xs">
-                <p className="text-on-tertiary-fixed italic font-medium leading-relaxed">
-                  &ldquo;Data is the silent lifeguard that watches over our entire operation.&rdquo;
-                </p>
-                <p className="mt-4 text-xs font-bold text-on-tertiary-fixed-variant uppercase">
-                  Director of Safety, Jumeirah Group
-                </p>
-              </div>
+              
             </div>
           </div>
         </section>
 
         {/* Partner Logos — fixed identical cells so every logo renders at the same size */}
         <section className="py-6 bg-white">
-          <div className="editorial-spacing">
+          <div className="editorial-spacing text-center">
+            <h2 className="text-3xl font-bold mb-8">Our Partners</h2>
             <style>{`
               @keyframes logoFloat {
                 0%, 100% { transform: translateY(0); }
@@ -118,18 +112,15 @@ export default function Home() {
               }
             `}</style>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 md:gap-4 items-stretch">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 items-stretch justify-items-center place-content-center max-w-4xl mx-auto">
               {[
-                { src: '/logo-iwsf.webp', alt: 'I.W.S.F.' },
-                { src: '/logo-medic-first-aid.png', alt: 'MEDIC First Aid' },
-                { src: '/logo-american-lifeguard.png', alt: 'American Lifeguard Association' },
-                { src: '/logo-emergency-first-response.webp', alt: 'Emergency First Response' },
-                { src: '/logo-ambulance.png', alt: 'Ambulance' },
-                { src: '/logo-eiac.png', alt: 'Emirates International Accreditation Center' },
+                { src: '/1.jpg', alt: 'hsi' },
+                { src: '/2.jpg', alt: 'SGE' },
+                { src: '/3.jpg', alt: 'STARFICH SWIMMING' }
               ].map((logo, idx) => (
                 <div
                   key={logo.alt}
-                  className="group flex w-full min-h-0 h-52 sm:h-60 md:h-72 items-center justify-center bg-transparent p-0"
+                  className="group flex w-full min-h-0 h-32 sm:h-40 md:h-48 items-center justify-center bg-transparent p-0"
                   style={{
                     animation: 'logoFloat 4.5s ease-in-out infinite',
                     animationDelay: `${idx * 0.15}s`,
